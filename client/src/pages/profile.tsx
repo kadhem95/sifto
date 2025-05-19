@@ -222,14 +222,14 @@ export default function Profile() {
                 <div className="flex items-center mb-4">
                   <Rating value={userProfile?.rating || 0} readOnly size="sm" />
                   <span className="text-sm text-neutral-500 ml-1">
-                    {userProfile?.rating?.toFixed(1) || "0.0"} ({userProfile?.reviewCount || 0} reviews)
+                    {userProfile?.rating?.toFixed(1) || "0.0"} ({userProfile?.reviewCount || 0} recensioni)
                   </span>
                 </div>
                 <Button
                   onClick={() => setIsEditing(true)}
                   className="text-neutral-700 bg-neutral-100"
                 >
-                  Edit Profile
+                  Modifica Profilo
                 </Button>
               </>
             )}
@@ -238,22 +238,22 @@ export default function Profile() {
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-4">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Activity Stats</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Statistiche attività</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-neutral-50 p-3 rounded-lg">
-                <p className="text-neutral-500 text-sm">Packages Sent</p>
+                <p className="text-neutral-500 text-sm">Pacchi inviati</p>
                 <p className="text-xl font-semibold text-neutral-900">{stats.packagesSent}</p>
               </div>
               <div className="bg-neutral-50 p-3 rounded-lg">
-                <p className="text-neutral-500 text-sm">Trips Reported</p>
+                <p className="text-neutral-500 text-sm">Viaggi segnalati</p>
                 <p className="text-xl font-semibold text-neutral-900">{stats.tripsReported}</p>
               </div>
               <div className="bg-neutral-50 p-3 rounded-lg">
-                <p className="text-neutral-500 text-sm">Total Earned</p>
+                <p className="text-neutral-500 text-sm">Totale guadagnato</p>
                 <p className="text-xl font-semibold text-secondary">{stats.totalEarned}€</p>
               </div>
               <div className="bg-neutral-50 p-3 rounded-lg">
-                <p className="text-neutral-500 text-sm">Total Spent</p>
+                <p className="text-neutral-500 text-sm">Totale speso</p>
                 <p className="text-xl font-semibold text-primary">{stats.totalSpent}€</p>
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function Profile() {
         {reviews.length > 0 && (
           <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
             <div className="p-4">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-4">Recent Reviews</h3>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-4">Recensioni recenti</h3>
               
               {reviews.map((review) => (
                 <div key={review.id} className="mb-4 border-b border-neutral-100 pb-4 last:border-0 last:mb-0 last:pb-0">
@@ -297,16 +297,16 @@ export default function Profile() {
         
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-4">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Legal Information</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informazioni legali</h3>
             <div className="text-sm text-neutral-500 space-y-3">
               <p>
-                <strong className="font-medium text-neutral-700">Disclaimer:</strong> PackShare is not responsible for the contents of packages. Users are solely responsible for ensuring their packages comply with all applicable laws and regulations.
+                <strong className="font-medium text-neutral-700">Disclaimer:</strong> PackShare non è responsabile del contenuto dei pacchi. Gli utenti sono gli unici responsabili di garantire che i loro pacchi rispettino tutte le leggi e i regolamenti applicabili.
               </p>
               <p>
-                <strong className="font-medium text-neutral-700">Privacy Policy:</strong> We collect minimal personal information required to provide our service. Your data is protected and never shared with third parties.
+                <strong className="font-medium text-neutral-700">Privacy Policy:</strong> Raccogliamo le informazioni personali minime necessarie per fornire il nostro servizio. I tuoi dati sono protetti e mai condivisi con terze parti.
               </p>
               <p>
-                <strong className="font-medium text-neutral-700">Terms of Service:</strong> By using PackShare, you agree to our terms which include behaving respectfully to other users and not misusing the platform.
+                <strong className="font-medium text-neutral-700">Termini di Servizio:</strong> Utilizzando PackShare, accetti i nostri termini che includono un comportamento rispettoso verso gli altri utenti e il non utilizzo improprio della piattaforma.
               </p>
             </div>
           </div>
@@ -316,20 +316,20 @@ export default function Profile() {
           onClick={() => setShowLogoutConfirm(true)}
           className="w-full bg-neutral-100 text-neutral-700 font-medium rounded-lg py-4 h-auto mb-4"
         >
-          Log Out
+          Disconnetti
         </Button>
 
         <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+              <AlertDialogTitle>Sei sicuro di voler uscire?</AlertDialogTitle>
               <AlertDialogDescription>
-                You will need to login with your phone number again to access your account.
+                Dovrai accedere nuovamente con il tuo numero di telefono per accedere al tuo account.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout}>Log Out</AlertDialogAction>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>Disconnetti</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
