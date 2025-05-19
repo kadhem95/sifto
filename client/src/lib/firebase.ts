@@ -1,9 +1,17 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPhoneNumber, PhoneAuthProvider, RecaptchaVerifier } from "firebase/auth";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut,
+  updateProfile,
+  User
+} from "firebase/auth";
 import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// Re-initialize Firebase here to ensure it's available
+// Initialize Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -21,104 +29,96 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Initialize reCAPTCHA verifier
-let recaptchaVerifier: RecaptchaVerifier | null = null;
+// Email and Password Authentication
+export interface RegisterData {
+  email: string;
+  password: string;
+  displayName?: string;
+}
 
-export const initRecaptcha = (containerId: string) => {
+// Register new user with email and password
+export const registerWithEmail = async ({ email, password, displayName }: RegisterData) => {
   try {
-    // Clear existing recaptchaVerifier if it exists
-    if (recaptchaVerifier) {
-      recaptchaVerifier.clear();
-      recaptchaVerifier = null;
+    console.log(`Attempting to register user with email: ${email}`);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update profile with display name if provided
+    if (displayName && userCredential.user) {
+      await updateProfile(userCredential.user, { displayName });
     }
     
-    // Check if the container element exists
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`Container element with id '${containerId}' not found`);
-      return null;
+    console.log("User registered successfully");
+    return userCredential.user;
+  } catch (error: any) {
+    console.error("Error during registration:", error);
+    
+    // Provide more detailed error information
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error("L'email è già in uso da un altro account");
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error("L'indirizzo email non è valido");
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error("La password è troppo debole");
+    } else {
+      throw new Error("Errore durante la registrazione. Riprova più tardi.");
     }
-    
-    // Clear any existing reCAPTCHA iframes
-    container.innerHTML = '';
-    
-    // Create new recaptchaVerifier
-    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible',
-      callback: () => {
-        console.log('reCAPTCHA verified successfully');
-      },
-      'expired-callback': () => {
-        console.log('reCAPTCHA expired, refreshing...');
-        if (recaptchaVerifier) {
-          recaptchaVerifier.clear();
-          recaptchaVerifier = null;
-        }
-      }
-    });
-    
-    return recaptchaVerifier;
-  } catch (error) {
-    console.error('Error initializing reCAPTCHA:', error);
-    return null;
   }
 };
 
-// Phone authentication
-export const signInWithPhone = async (phoneNumber: string, recaptchaContainer: string) => {
+// Login user with email and password
+export const loginWithEmail = async (email: string, password: string) => {
   try {
-    console.log(`Attempting to sign in with phone number: ${phoneNumber}`);
-    
-    // Create a new RecaptchaVerifier directly (avoiding potential null issues)
-    const container = document.getElementById(recaptchaContainer);
-    if (!container) {
-      throw new Error(`Container element with id '${recaptchaContainer}' not found`);
-    }
-    
-    // Clear any existing reCAPTCHA iframes
-    container.innerHTML = '';
-    
-    // Create the verifier directly
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
-      size: 'invisible',
-      callback: () => {
-        console.log('reCAPTCHA verified successfully');
-      }
-    });
-    
-    // Make sure the phone number is in E.164 format
-    const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
-    console.log(`Using formatted phone number: ${formattedPhoneNumber}`);
-    
-    // Send verification code
-    console.log("Sending verification code...");
-    const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, verifier);
-    console.log("Verification code sent successfully");
-    
-    // Clear verifier after use
-    try {
-      verifier.clear();
-    } catch (clearError) {
-      console.warn("Could not clear reCAPTCHA verifier:", clearError);
-    }
-    
-    return confirmationResult;
+    console.log(`Attempting to login user with email: ${email}`);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log("User logged in successfully");
+    return userCredential.user;
   } catch (error: any) {
-    console.error("Error during signInWithPhone:", error);
+    console.error("Error during login:", error);
     
     // Provide more detailed error information
-    if (error.code === 'auth/operation-not-allowed') {
-      console.error("Phone authentication is not enabled in your Firebase console");
-      console.error("Please go to the Firebase console > Authentication > Sign-in methods and enable Phone authentication");
-    } else if (error.code === 'auth/invalid-phone-number') {
-      console.error("The phone number is not valid");
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      throw new Error("Email o password non corretti");
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error("L'indirizzo email non è valido");
+    } else if (error.code === 'auth/user-disabled') {
+      throw new Error("Questo account è stato disabilitato");
     } else if (error.code === 'auth/too-many-requests') {
-      console.error("Too many requests have been made to verify this phone number");
-    } else if (error.code === 'auth/captcha-check-failed') {
-      console.error("reCAPTCHA verification failed");
+      throw new Error("Troppi tentativi falliti. Riprova più tardi.");
+    } else {
+      throw new Error("Errore durante il login. Riprova più tardi.");
     }
+  }
+};
+
+// Send password reset email
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset email sent");
+    return true;
+  } catch (error: any) {
+    console.error("Error sending password reset email:", error);
     
-    throw error;
+    // Provide more detailed error information
+    if (error.code === 'auth/user-not-found') {
+      throw new Error("Nessun utente trovato con questa email");
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error("L'indirizzo email non è valido");
+    } else {
+      throw new Error("Errore nell'invio dell'email di reset. Riprova più tardi.");
+    }
+  }
+};
+
+// Logout user
+export const logout = async () => {
+  try {
+    await signOut(auth);
+    console.log("User logged out successfully");
+    return true;
+  } catch (error) {
+    console.error("Error during logout:", error);
+    throw new Error("Errore durante il logout. Riprova più tardi.");
   }
 };
 

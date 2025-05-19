@@ -1,21 +1,19 @@
 import { createContext, useEffect, useState, ReactNode } from "react";
-import { getAuth, User, onAuthStateChanged } from "firebase/auth";
-import { getUserProfile } from "@/lib/firebase";
+import { User, onAuthStateChanged } from "firebase/auth";
+import { getUserProfile, auth } from "@/lib/firebase";
 
 interface AuthContextType {
   currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
   userProfile: any | null;
   loading: boolean;
-  phoneConfirmation: any | null;
-  setPhoneConfirmation: (confirmation: any) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   currentUser: null,
+  setCurrentUser: () => {},
   userProfile: null,
   loading: true,
-  phoneConfirmation: null,
-  setPhoneConfirmation: () => {},
 });
 
 interface AuthProviderProps {
@@ -26,8 +24,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [phoneConfirmation, setPhoneConfirmation] = useState<any | null>(null);
-  const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -48,14 +44,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return unsubscribe;
-  }, [auth]);
+  }, []);
 
   const value = {
     currentUser,
+    setCurrentUser,
     userProfile,
     loading,
-    phoneConfirmation,
-    setPhoneConfirmation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

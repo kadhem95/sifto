@@ -1,63 +1,51 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import PhoneInput from "@/components/auth/phone-input";
-import { signInWithPhone } from "@/lib/firebase";
+import { loginWithEmail, registerWithEmail } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Login() {
   const [, navigate] = useLocation();
-  const { setPhoneConfirmation } = useAuth();
+  const { setCurrentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const recaptchaIdRef = useRef<string>(`recaptcha-container-${Date.now()}`);
+  const [isRegister, setIsRegister] = useState(false);
+  
+  // Form fields
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
 
-  // Cleanup recaptcha container on component unmount
-  useEffect(() => {
-    return () => {
-      if (recaptchaContainerRef.current) {
-        recaptchaContainerRef.current.innerHTML = '';
-      }
-    };
-  }, []);
-
-  const handleSendOTP = async (phoneNumber: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError("");
     
     try {
-      // Clean any previous recaptcha content
-      if (recaptchaContainerRef.current) {
-        recaptchaContainerRef.current.innerHTML = '';
-      }
-      
-      // Try to send the verification code
-      console.log("Attempting to send verification code...");
-      const confirmationResult = await signInWithPhone(phoneNumber, recaptchaIdRef.current);
-      
-      // If successful, set the confirmation and navigate
-      setPhoneConfirmation(confirmationResult);
-      navigate(`/verify?phone=${encodeURIComponent(phoneNumber)}`);
-    } catch (error: any) {
-      console.error("Error sending OTP:", error);
-      
-      // Display a more helpful error message based on the error code
-      if (error.code === 'auth/operation-not-allowed') {
-        setError(
-          "Autenticazione telefonica non abilitata. Per favore, contatta l'amministratore del sistema."
-        );
-      } else if (error.code === 'auth/invalid-phone-number') {
-        setError("Numero di telefono non valido. Assicurati di inserire il prefisso internazionale.");
-      } else if (error.code === 'auth/too-many-requests') {
-        setError("Troppe richieste. Riprova più tardi.");
-      } else if (error.code === 'auth/captcha-check-failed') {
-        setError("Verifica reCAPTCHA fallita. Riprova.");
+      if (isRegister) {
+        // Register new user
+        const user = await registerWithEmail({ email, password, displayName });
+        setCurrentUser(user);
+        navigate("/");
       } else {
-        setError("Invio del codice di verifica fallito. Riprova più tardi.");
+        // Login existing user
+        const user = await loginWithEmail(email, password);
+        setCurrentUser(user);
+        navigate("/");
       }
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      setError(error.message || "Si è verificato un errore. Riprova più tardi.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleMode = () => {
+    setIsRegister(!isRegister);
+    setError("");
   };
 
   return (
@@ -79,31 +67,79 @@ export default function Login() {
           Connect package senders with travelers
         </p>
 
-        <div className="w-full mt-6">
-          <p className="text-neutral-900 font-medium mb-2">
-            Enter your phone number
-          </p>
-          <PhoneInput onSubmit={handleSendOTP} isLoading={isLoading} />
-          {error && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{error}</p>
-              {error.includes("non abilitata") && (
-                <p className="text-xs text-red-500 mt-1">
-                  È necessario abilitare l'autenticazione telefonica nella console Firebase:
-                  Authentication &gt; Sign-in methods &gt; Phone
-                </p>
-              )}
+        <div className="w-full max-w-md">
+          <h2 className="text-xl font-bold text-neutral-900 mb-4">
+            {isRegister ? "Registrati" : "Accedi"}
+          </h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Nome utente</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Il tuo nome"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required={isRegister}
+                />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="La tua email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="La tua password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+            >
+              {isLoading ? "Caricamento..." : isRegister ? "Registrati" : "Accedi"}
+            </Button>
+          </form>
+          
+          <div className="mt-4 text-center">
+            <button 
+              type="button"
+              onClick={toggleMode}
+              className="text-primary hover:underline"
+            >
+              {isRegister 
+                ? "Hai già un account? Accedi" 
+                : "Non hai un account? Registrati"}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Recaptcha container with unique ID */}
-      <div 
-        id={recaptchaIdRef.current} 
-        ref={recaptchaContainerRef} 
-        className="invisible h-0"
-      ></div>
     </div>
   );
 }
