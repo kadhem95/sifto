@@ -12,9 +12,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { createTrip } from "@/lib/firebase";
 
 const tripFormSchema = z.object({
-  from: z.string().min(2, "Origin location is required"),
-  to: z.string().min(2, "Destination location is required"),
-  date: z.string().min(1, "Travel date is required"),
+  from: z.string().min(2, "È richiesta la località di partenza"),
+  to: z.string().min(2, "È richiesta la località di destinazione"),
+  date: z.string().min(1, "È richiesta la data di viaggio"),
   capacity: z.coerce.number().min(1).max(3),
   notes: z.string().optional(),
 });
@@ -98,7 +98,7 @@ export default function ReportTrip() {
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-neutral-900 ml-2">
-            Report a Trip
+            Segnala un Viaggio
           </h1>
         </div>
 

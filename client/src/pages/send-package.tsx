@@ -269,7 +269,7 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-6">
-            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Photo of package (optional)</Label>
+            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (opzionale)</Label>
             <label 
               htmlFor="image"
               className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center block cursor-pointer"
@@ -292,7 +292,7 @@ export default function SendPackage() {
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <p className="text-neutral-500">Tap to upload</p>
+                  <p className="text-neutral-500">Tocca per caricare</p>
                 </>
               )}
               <input
@@ -313,10 +313,10 @@ export default function SendPackage() {
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Processing...
+                Elaborazione in corso...
               </div>
             ) : (
-              "Find Travelers"
+              "Trova Viaggiatori"
             )}
           </Button>
         </form>
