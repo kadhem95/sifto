@@ -15,7 +15,7 @@ const tripFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di partenza"),
   to: z.string().min(2, "È richiesta la località di destinazione"),
   date: z.string().min(1, "È richiesta la data di viaggio"),
-  capacity: z.coerce.number().min(1).max(3),
+  transportType: z.string().min(1, "È richiesto il tipo di mezzo"),
   notes: z.string().optional(),
 });
 
@@ -25,7 +25,7 @@ export default function ReportTrip() {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedCapacity, setSelectedCapacity] = useState<number>(1);
+  const [selectedTransportType, setSelectedTransportType] = useState<string>("");
 
   const {
     register,
@@ -38,14 +38,14 @@ export default function ReportTrip() {
       from: "",
       to: "",
       date: "",
-      capacity: 1,
+      transportType: "",
       notes: "",
     },
   });
 
-  const handleCapacitySelect = (capacity: number) => {
-    setSelectedCapacity(capacity);
-    setValue("capacity", capacity);
+  const handleTransportTypeSelect = (type: string) => {
+    setSelectedTransportType(type);
+    setValue("transportType", type);
   };
 
   const onSubmit = async (data: TripFormValues) => {
@@ -63,7 +63,7 @@ export default function ReportTrip() {
         from: data.from,
         to: data.to,
         date: data.date,
-        capacity: data.capacity,
+        transportType: data.transportType,
         notes: data.notes,
         createdAt: new Date().toISOString(),
       });
@@ -159,44 +159,57 @@ export default function ReportTrip() {
           </div>
 
           <div className="mb-4">
-            <Label className="block text-neutral-700 font-medium mb-2">Spazio disponibile</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <Label className="block text-neutral-700 font-medium mb-2">Tipo di mezzo</Label>
+            <div className="grid grid-cols-2 gap-3 mb-2">
               <button
                 type="button"
-                onClick={() => handleCapacitySelect(1)}
+                onClick={() => handleTransportTypeSelect("auto_piccola")}
                 className={`${
-                  selectedCapacity === 1
+                  selectedTransportType === "auto_piccola"
                     ? "bg-secondary text-white"
                     : "bg-neutral-100 text-neutral-700"
                 } font-medium rounded-lg py-3 border border-neutral-300`}
               >
-                1 pacco
+                🚗 Auto piccola
               </button>
               <button
                 type="button"
-                onClick={() => handleCapacitySelect(2)}
+                onClick={() => handleTransportTypeSelect("suv_sw")}
                 className={`${
-                  selectedCapacity === 2
+                  selectedTransportType === "suv_sw"
                     ? "bg-secondary text-white"
                     : "bg-neutral-100 text-neutral-700"
                 } font-medium rounded-lg py-3 border border-neutral-300`}
               >
-                2 pacchi
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCapacitySelect(3)}
-                className={`${
-                  selectedCapacity === 3
-                    ? "bg-secondary text-white"
-                    : "bg-neutral-100 text-neutral-700"
-                } font-medium rounded-lg py-3 border border-neutral-300`}
-              >
-                3 pacchi
+                🚙 SUV / Station Wagon
               </button>
             </div>
-            {errors.capacity && (
-              <p className="text-red-500 text-sm mt-1">{errors.capacity.message}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleTransportTypeSelect("van_furgone")}
+                className={`${
+                  selectedTransportType === "van_furgone"
+                    ? "bg-secondary text-white"
+                    : "bg-neutral-100 text-neutral-700"
+                } font-medium rounded-lg py-3 border border-neutral-300`}
+              >
+                🚐 Van / Furgone
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTransportTypeSelect("bagaglio_aereo")}
+                className={`${
+                  selectedTransportType === "bagaglio_aereo"
+                    ? "bg-secondary text-white"
+                    : "bg-neutral-100 text-neutral-700"
+                } font-medium rounded-lg py-3 border border-neutral-300`}
+              >
+                ✈️ Bagaglio aereo
+              </button>
+            </div>
+            {errors.transportType && (
+              <p className="text-red-500 text-sm mt-1">{errors.transportType.message}</p>
             )}
           </div>
 
