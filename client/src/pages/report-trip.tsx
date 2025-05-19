@@ -201,11 +201,11 @@ export default function ReportTrip() {
           </div>
 
           <div className="mb-6">
-            <Label htmlFor="notes" className="block text-neutral-700 font-medium mb-2">Notes (optional)</Label>
+            <Label htmlFor="notes" className="block text-neutral-700 font-medium mb-2">Note (opzionale)</Label>
             <Textarea
               id="notes"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-24 resize-none"
-              placeholder="Any additional information..."
+              placeholder="Qualsiasi informazione aggiuntiva..."
               {...register("notes")}
             />
           </div>
@@ -218,10 +218,10 @@ export default function ReportTrip() {
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Processing...
+                Elaborazione...
               </div>
             ) : (
-              "Find Packages"
+              "Trova Pacchi"
             )}
           </Button>
         </form>
