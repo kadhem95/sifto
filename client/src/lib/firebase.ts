@@ -25,28 +25,99 @@ export const storage = getStorage(app);
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
 export const initRecaptcha = (containerId: string) => {
-  if (recaptchaVerifier) {
-    recaptchaVerifier.clear();
-  }
-  
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-    size: 'invisible',
-    callback: () => {
-      // reCAPTCHA solved, allow signInWithPhoneNumber.
+  try {
+    // Clear existing recaptchaVerifier if it exists
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear();
+      recaptchaVerifier = null;
     }
-  });
-  
-  return recaptchaVerifier;
+    
+    // Check if the container element exists
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container element with id '${containerId}' not found`);
+      return null;
+    }
+    
+    // Clear any existing reCAPTCHA iframes
+    container.innerHTML = '';
+    
+    // Create new recaptchaVerifier
+    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA verified successfully');
+      },
+      'expired-callback': () => {
+        console.log('reCAPTCHA expired, refreshing...');
+        if (recaptchaVerifier) {
+          recaptchaVerifier.clear();
+          recaptchaVerifier = null;
+        }
+      }
+    });
+    
+    return recaptchaVerifier;
+  } catch (error) {
+    console.error('Error initializing reCAPTCHA:', error);
+    return null;
+  }
 };
 
 // Phone authentication
 export const signInWithPhone = async (phoneNumber: string, recaptchaContainer: string) => {
   try {
-    const verifier = initRecaptcha(recaptchaContainer);
-    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+    console.log(`Attempting to sign in with phone number: ${phoneNumber}`);
+    
+    // Create a new RecaptchaVerifier directly (avoiding potential null issues)
+    const container = document.getElementById(recaptchaContainer);
+    if (!container) {
+      throw new Error(`Container element with id '${recaptchaContainer}' not found`);
+    }
+    
+    // Clear any existing reCAPTCHA iframes
+    container.innerHTML = '';
+    
+    // Create the verifier directly
+    const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA verified successfully');
+      }
+    });
+    
+    // Make sure the phone number is in E.164 format
+    const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+    console.log(`Using formatted phone number: ${formattedPhoneNumber}`);
+    
+    // Send verification code
+    console.log("Sending verification code...");
+    const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, verifier);
+    console.log("Verification code sent successfully");
+    
+    // Clear verifier after use
+    try {
+      verifier.clear();
+    } catch (clearError) {
+      console.warn("Could not clear reCAPTCHA verifier:", clearError);
+    }
+    
     return confirmationResult;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error during signInWithPhone:", error);
+    
+    // Provide more detailed error information
+    if (error.code === 'auth/operation-not-allowed') {
+      console.error("Phone authentication is not enabled in your Firebase console");
+      console.error("Please go to the Firebase console > Authentication > Sign-in methods and enable Phone authentication");
+    } else if (error.code === 'auth/invalid-phone-number') {
+      console.error("The phone number is not valid");
+    } else if (error.code === 'auth/too-many-requests') {
+      console.error("Too many requests have been made to verify this phone number");
+    } else if (error.code === 'auth/captcha-check-failed') {
+      console.error("reCAPTCHA verification failed");
+    }
+    
     throw error;
   }
 };

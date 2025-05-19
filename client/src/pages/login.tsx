@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import PhoneInput from "@/components/auth/phone-input";
@@ -9,18 +9,52 @@ export default function Login() {
   const { setPhoneConfirmation } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const recaptchaIdRef = useRef<string>(`recaptcha-container-${Date.now()}`);
+
+  // Cleanup recaptcha container on component unmount
+  useEffect(() => {
+    return () => {
+      if (recaptchaContainerRef.current) {
+        recaptchaContainerRef.current.innerHTML = '';
+      }
+    };
+  }, []);
 
   const handleSendOTP = async (phoneNumber: string) => {
     setIsLoading(true);
     setError("");
     
     try {
-      const confirmationResult = await signInWithPhone(phoneNumber, "recaptcha-container");
+      // Clean any previous recaptcha content
+      if (recaptchaContainerRef.current) {
+        recaptchaContainerRef.current.innerHTML = '';
+      }
+      
+      // Try to send the verification code
+      console.log("Attempting to send verification code...");
+      const confirmationResult = await signInWithPhone(phoneNumber, recaptchaIdRef.current);
+      
+      // If successful, set the confirmation and navigate
       setPhoneConfirmation(confirmationResult);
       navigate(`/verify?phone=${encodeURIComponent(phoneNumber)}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending OTP:", error);
-      setError("Failed to send verification code. Please try again.");
+      
+      // Display a more helpful error message based on the error code
+      if (error.code === 'auth/operation-not-allowed') {
+        setError(
+          "Autenticazione telefonica non abilitata. Per favore, contatta l'amministratore del sistema."
+        );
+      } else if (error.code === 'auth/invalid-phone-number') {
+        setError("Numero di telefono non valido. Assicurati di inserire il prefisso internazionale.");
+      } else if (error.code === 'auth/too-many-requests') {
+        setError("Troppe richieste. Riprova più tardi.");
+      } else if (error.code === 'auth/captcha-check-failed') {
+        setError("Verifica reCAPTCHA fallita. Riprova.");
+      } else {
+        setError("Invio del codice di verifica fallito. Riprova più tardi.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,12 +84,26 @@ export default function Login() {
             Enter your phone number
           </p>
           <PhoneInput onSubmit={handleSendOTP} isLoading={isLoading} />
-          {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+          {error && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+              {error.includes("non abilitata") && (
+                <p className="text-xs text-red-500 mt-1">
+                  È necessario abilitare l'autenticazione telefonica nella console Firebase:
+                  Authentication &gt; Sign-in methods &gt; Phone
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Hidden recaptcha container */}
-      <div id="recaptcha-container"></div>
+      {/* Recaptcha container with unique ID */}
+      <div 
+        id={recaptchaIdRef.current} 
+        ref={recaptchaContainerRef} 
+        className="invisible h-0"
+      ></div>
     </div>
   );
 }
