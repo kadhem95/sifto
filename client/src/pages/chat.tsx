@@ -121,12 +121,12 @@ export default function Chat() {
       }
     };
 
-    const unsubscribe = fetchChatRoom();
+    // Eseguiamo la funzione per recuperare i dati della chat
+    fetchChatRoom();
 
+    // Non è necessario un cleanup per questa funzione poiché non restituisce un unsubscribe
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      // Cleanup se necessario in futuro
     };
   }, [currentUser, id, navigate]);
 
