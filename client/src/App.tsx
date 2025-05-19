@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
-import SendPackage from "@/pages/send-package";
+import SendPackage from "@/pages/send-package-new";
 import ReportTrip from "@/pages/report-trip";
 import TravelersList from "@/pages/travelers-list";
 import PackagesList from "@/pages/packages-list";
