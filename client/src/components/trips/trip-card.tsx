@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Rating } from "@/components/ui/rating";
+import ReviewListDialog from "@/components/reviews/review-list-dialog";
 
 interface Traveler {
   id: string;
@@ -33,6 +35,8 @@ export default function TripCard({
   onContact,
   className = "",
 }: TripCardProps) {
+  const [showReviews, setShowReviews] = useState(false);
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
@@ -67,42 +71,56 @@ export default function TripCard({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4 ${className}`}>
-      <div className="p-4">
-        <div className="flex items-center mb-3">
-          <Avatar className="w-12 h-12">
-            <AvatarImage src={traveler.photoURL} alt={traveler.name} />
-            <AvatarFallback>{traveler.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="ml-3">
-            <h3 className="text-neutral-900 font-medium">{traveler.name}</h3>
-            <div className="flex items-center">
-              <Rating value={traveler.rating} readOnly size="sm" />
-              <span className="text-sm text-neutral-500 ml-1">
-                {traveler.rating.toFixed(1)} ({traveler.reviewCount} recensioni)
-              </span>
+    <>
+      <div className={`bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4 ${className}`}>
+        <div className="p-4">
+          <div className="flex items-center mb-3">
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={traveler.photoURL} alt={traveler.name} />
+              <AvatarFallback>{traveler.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="ml-3">
+              <h3 className="text-neutral-900 font-medium">{traveler.name}</h3>
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80"
+                onClick={() => setShowReviews(true)}
+                title="Visualizza tutte le recensioni"
+              >
+                <Rating value={traveler.rating} readOnly size="sm" />
+                <span className="text-sm text-neutral-500 ml-1">
+                  {traveler.rating.toFixed(1)} ({traveler.reviewCount} recensioni)
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-between items-center py-2 border-t border-b border-neutral-200 my-2">
-          <div>
-            <p className="text-neutral-900">{from} → {to}</p>
-            <p className="text-sm text-neutral-500">{formatDate(date)}</p>
+          <div className="flex justify-between items-center py-2 border-t border-b border-neutral-200 my-2">
+            <div>
+              <p className="text-neutral-900">{from} → {to}</p>
+              <p className="text-sm text-neutral-500">{formatDate(date)}</p>
+            </div>
+            {getDeadlineIndicator()}
           </div>
-          {getDeadlineIndicator()}
-        </div>
 
-        <div className="mt-3 flex justify-between items-center">
-          <span className="text-neutral-500">Spazio per {capacity} {capacity === 1 ? 'pacco' : 'pacchi'}</span>
-          <Button
-            onClick={() => onContact(id)}
-            className="bg-primary text-white font-medium rounded-lg px-4 py-2 h-auto"
-          >
-            Contatta
-          </Button>
+          <div className="mt-3 flex justify-between items-center">
+            <span className="text-neutral-500">Spazio per {capacity} {capacity === 1 ? 'pacco' : 'pacchi'}</span>
+            <Button
+              onClick={() => onContact(id)}
+              className="bg-primary text-white font-medium rounded-lg px-4 py-2 h-auto"
+            >
+              Contatta
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Dialog per mostrare tutte le recensioni */}
+      <ReviewListDialog 
+        userId={traveler.id} 
+        userName={traveler.name}
+        isOpen={showReviews}
+        onClose={() => setShowReviews(false)}
+      />
+    </>
   );
 }
