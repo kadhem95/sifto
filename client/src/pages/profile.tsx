@@ -180,7 +180,7 @@ export default function Profile() {
   return (
     <AppLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profile</h1>
+        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profilo</h1>
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-6 flex flex-col items-center">

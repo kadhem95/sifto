@@ -146,7 +146,7 @@ export default function PackagesList() {
         <div className="p-6 flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-neutral-500">Loading packages...</p>
+            <p className="text-neutral-500">Caricamento pacchi...</p>
           </div>
         </div>
       </AppLayout>
@@ -189,7 +189,7 @@ export default function PackagesList() {
                 <p className="text-neutral-900 font-medium">
                   {new Date(tripDetails.date).toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
-                <p className="text-neutral-500">Space for {tripDetails.capacity} {tripDetails.capacity === 1 ? 'package' : 'packages'}</p>
+                <p className="text-neutral-500">Spazio per {tripDetails.capacity} {tripDetails.capacity === 1 ? 'pacco' : 'pacchi'}</p>
               </div>
             </div>
           </div>
@@ -211,9 +211,9 @@ export default function PackagesList() {
           ))
         ) : (
           <div className="p-4 bg-neutral-100 rounded-lg text-center">
-            <p className="text-neutral-500 mb-2">No packages available</p>
+            <p className="text-neutral-500 mb-2">Nessun pacco disponibile</p>
             <p className="text-sm text-neutral-500">
-              We'll notify you when new packages match your trip
+              Ti avviseremo quando nuovi pacchi corrisponderanno al tuo viaggio
             </p>
           </div>
         )}
