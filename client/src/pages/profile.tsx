@@ -42,92 +42,142 @@ export default function Profile() {
 
     const fetchData = async () => {
       try {
-        // Fetch reviews
-        const reviewsQuery = query(
-          collection(db, "reviews"),
-          where("receiverId", "==", currentUser.uid),
-          orderBy("createdAt", "desc"),
-          limit(5)
-        );
-        const reviewsSnapshot = await getDocs(reviewsQuery);
-        
-        const reviewsData = await Promise.all(
-          reviewsSnapshot.docs.map(async (doc) => {
-            const reviewData = doc.data();
-            
-            // Get sender info
-            const userQuery = query(
-              collection(db, "users"),
-              where("uid", "==", reviewData.senderId)
-            );
-            const userSnapshot = await getDocs(userQuery);
-            
-            const userData = !userSnapshot.empty ? userSnapshot.docs[0].data() : null;
-            
-            return {
-              id: doc.id,
-              ...reviewData,
-              sender: userData ? {
-                name: userData.displayName || "Unknown",
-                photoURL: userData.photoURL
-              } : null
-            };
-          })
-        );
-        
-        setReviews(reviewsData);
-        
-        // Fetch stats
-        const packagesQuery = query(
-          collection(db, "packages"),
-          where("userId", "==", currentUser.uid)
-        );
-        const packagesSnapshot = await getDocs(packagesQuery);
-        
-        const tripsQuery = query(
-          collection(db, "trips"),
-          where("userId", "==", currentUser.uid)
-        );
-        const tripsSnapshot = await getDocs(tripsQuery);
-        
-        // Calculate total spent on packages
-        const totalSpent = packagesSnapshot.docs.reduce((sum, doc) => {
-          const packageData = doc.data();
-          return sum + (packageData.price || 0);
-        }, 0);
-        
-        // Calculate total earned from trips with completed matches
-        let totalEarned = 0;
-        for (const tripDoc of tripsSnapshot.docs) {
-          const matchesQuery = query(
-            collection(db, "matches"),
-            where("tripId", "==", tripDoc.id),
-            where("status", "==", "completed")
+        // Fetch reviews con gestione dell'errore di indice
+        try {
+          const reviewsQuery = query(
+            collection(db, "reviews"),
+            where("receiverId", "==", currentUser.uid),
+            orderBy("createdAt", "desc"),
+            limit(5)
           );
-          const matchesSnapshot = await getDocs(matchesQuery);
+          const reviewsSnapshot = await getDocs(reviewsQuery);
           
-          for (const matchDoc of matchesSnapshot.docs) {
-            const matchData = matchDoc.data();
+          const reviewsData = await Promise.all(
+            reviewsSnapshot.docs.map(async (doc) => {
+              const reviewData = doc.data();
+              
+              // Get sender info
+              const userQuery = query(
+                collection(db, "users"),
+                where("uid", "==", reviewData.senderId)
+              );
+              const userSnapshot = await getDocs(userQuery);
+              
+              const userData = !userSnapshot.empty ? userSnapshot.docs[0].data() : null;
+              
+              return {
+                id: doc.id,
+                ...reviewData,
+                sender: userData ? {
+                  name: userData.displayName || "Sconosciuto",
+                  photoURL: userData.photoURL
+                } : null
+              };
+            })
+          );
+          
+          setReviews(reviewsData);
+        } catch (reviewError: any) {
+          console.error("Errore nel caricamento delle recensioni:", reviewError);
+          
+          // Controlla se l'errore è dovuto alla mancanza di un indice
+          if (reviewError.code === 'failed-precondition' && reviewError.message.includes('index')) {
+            console.log("Questo errore è dovuto alla mancanza di un indice in Firestore");
+            toast({
+              title: "Indice Firestore mancante",
+              description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni",
+              variant: "default",
+            });
             
-            const packageQuery = query(
-              collection(db, "packages"),
-              where("__name__", "==", matchData.packageId)
-            );
-            const packageSnapshot = await getDocs(packageQuery);
-            
-            if (!packageSnapshot.empty) {
-              const packageData = packageSnapshot.docs[0].data();
-              totalEarned += packageData.price || 0;
-            }
+            // In produzione, potresti voler estrarre l'URL dell'indice dall'errore
+            // e fornirlo all'utente per la creazione con un singolo clic
           }
+          
+          // Imposta recensioni vuote in caso di errore
+          setReviews([]);
         }
         
-        setStats({
-          packagesSent: packagesSnapshot.size,
-          tripsReported: tripsSnapshot.size,
-          totalEarned,
-          totalSpent
-        });
+        // Fetch stats in blocchi separati per robustezza
+        try {
+          // Pacchetti inviati
+          const packagesQuery = query(
+            collection(db, "packages"),
+            where("userId", "==", currentUser.uid)
+          );
+          const packagesSnapshot = await getDocs(packagesQuery);
+          
+          // Viaggi segnalati
+          const tripsQuery = query(
+            collection(db, "trips"),
+            where("userId", "==", currentUser.uid)
+          );
+          const tripsSnapshot = await getDocs(tripsQuery);
+          
+          // Calculate total spent on packages
+          const totalSpent = packagesSnapshot.docs.reduce((sum, doc) => {
+            const packageData = doc.data();
+            return sum + (packageData.price || 0);
+          }, 0);
+          
+          // Initialize total earned
+          let totalEarned = 0;
+          
+          // Try calculating earnings, handle with care due to complex queries
+          try {
+            // Calculate total earned from trips with completed matches
+            for (const tripDoc of tripsSnapshot.docs) {
+              try {
+                const matchesQuery = query(
+                  collection(db, "matches"),
+                  where("tripId", "==", tripDoc.id),
+                  where("status", "==", "completed")
+                );
+                const matchesSnapshot = await getDocs(matchesQuery);
+                
+                for (const matchDoc of matchesSnapshot.docs) {
+                  try {
+                    const matchData = matchDoc.data();
+                    
+                    const packageQuery = query(
+                      collection(db, "packages"),
+                      where("__name__", "==", matchData.packageId)
+                    );
+                    const packageSnapshot = await getDocs(packageQuery);
+                    
+                    if (!packageSnapshot.empty) {
+                      const packageData = packageSnapshot.docs[0].data();
+                      totalEarned += packageData.price || 0;
+                    }
+                  } catch (packageError) {
+                    console.error("Errore nel recupero dati pacchetto:", packageError);
+                    // Continue with next match
+                  }
+                }
+              } catch (matchError) {
+                console.error("Errore nel recupero match:", matchError);
+                // Continue with next trip
+              }
+            }
+          } catch (earningsError) {
+            console.error("Errore nel calcolo guadagni:", earningsError);
+            // Use 0 as fallback for earnings
+          }
+          
+          setStats({
+            packagesSent: packagesSnapshot.size,
+            tripsReported: tripsSnapshot.size,
+            totalEarned,
+            totalSpent
+          });
+        } catch (statsError) {
+          console.error("Errore nel recupero statistiche:", statsError);
+          setStats({
+            packagesSent: 0,
+            tripsReported: 0,
+            totalEarned: 0,
+            totalSpent: 0
+          });
+        }
         
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -135,7 +185,7 @@ export default function Profile() {
     };
 
     fetchData();
-  }, [currentUser, navigate, userProfile]);
+  }, [currentUser, navigate, userProfile, toast]);
 
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
