@@ -155,7 +155,7 @@ export default function SendPackage() {
             <Input
               id="to"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="e.g. Tunis"
+              placeholder="es. Tunisi"
               {...register("to")}
             />
             {errors.to && (
@@ -164,7 +164,7 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">By when</Label>
+            <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">Entro quando</Label>
             <Input
               id="deadline"
               type="date"
@@ -177,7 +177,7 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-4">
-            <Label className="block text-neutral-700 font-medium mb-2">Package size</Label>
+            <Label className="block text-neutral-700 font-medium mb-2">Dimensione del pacco</Label>
             <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
@@ -200,7 +200,7 @@ export default function SendPackage() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Small
+                Piccolo
               </button>
               <button
                 type="button"
@@ -223,7 +223,7 @@ export default function SendPackage() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Medium
+                Medio
               </button>
               <button
                 type="button"
@@ -246,7 +246,7 @@ export default function SendPackage() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Large
+                Grande
               </button>
             </div>
             {errors.size && (
@@ -255,12 +255,12 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">Your offer (€)</Label>
+            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
             <Input
               id="price"
               type="number"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="e.g. 20"
+              placeholder="es. 20"
               {...register("price")}
             />
             {errors.price && (
