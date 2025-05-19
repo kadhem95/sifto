@@ -199,24 +199,49 @@ export default function Profile() {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
     
+    // Reset dell'input file per consentire la selezione dello stesso file
+    event.target.value = "";
+    
     setIsUploadingImage(true);
+    console.log("Inizio upload immagine...");
     
     try {
+      // Controllo dimensioni file (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("L'immagine è troppo grande. Dimensione massima: 5MB");
+      }
+      
       // Crea un riferimento allo storage con un nome file unico
-      const storageRef = ref(storage, `profile_images/${currentUser.uid}_${new Date().getTime()}`);
+      const fileName = `profile_${currentUser.uid}_${new Date().getTime()}`;
+      const storageRef = ref(storage, `profile_images/${fileName}`);
+      
+      console.log("Caricamento file su Firebase Storage...");
       
       // Carica il file
-      const uploadTask = await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, file);
       
       // Ottieni l'URL di download
-      const downloadURL = await getDownloadURL(uploadTask.ref);
+      console.log("Ottenimento URL di download...");
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      console.log("URL ottenuto:", downloadURL);
       
       // Aggiorna l'URL della foto nel profilo di autenticazione
+      console.log("Aggiornamento profilo autenticazione...");
       await updateProfile(currentUser, {
         photoURL: downloadURL
       });
       
+      // Forza il refresh dell'oggetto currentUser
+      const auth = getAuth();
+      if (auth.currentUser) {
+        // Aggiorna manualmente il riferimento locale
+        const updatedUser = auth.currentUser;
+        console.log("Profilo aggiornato:", updatedUser);
+      }
+      
       // Aggiorna anche nel database Firestore
+      console.log("Aggiornamento database Firestore...");
       const userQuery = query(
         collection(db, "users"),
         where("uid", "==", currentUser.uid)
@@ -229,9 +254,10 @@ export default function Profile() {
         await updateDoc(doc(db, "users", userDoc.id), {
           photoURL: downloadURL
         });
+        console.log("Documento Firestore aggiornato");
       } else {
         // Se l'utente non esiste nel database, crealo
-        await addDoc(collection(db, "users"), {
+        const newUserDoc = await addDoc(collection(db, "users"), {
           uid: currentUser.uid,
           displayName: currentUser.displayName || "",
           photoURL: downloadURL,
@@ -239,6 +265,7 @@ export default function Profile() {
           rating: 0,
           reviewCount: 0
         });
+        console.log("Nuovo documento Firestore creato:", newUserDoc.id);
       }
       
       // Mostra un messaggio di conferma
@@ -248,11 +275,14 @@ export default function Profile() {
         variant: "default"
       });
       
-    } catch (error) {
+      // Forza un refresh della pagina per aggiornare l'immagine
+      window.location.reload();
+      
+    } catch (error: any) {
       console.error("Error uploading profile image:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un problema durante il caricamento dell'immagine",
+        description: error.message || "Si è verificato un problema durante il caricamento dell'immagine",
         variant: "destructive"
       });
     } finally {
@@ -299,8 +329,14 @@ export default function Profile() {
           <div className="p-6 flex flex-col items-center">
             <div className="relative group cursor-pointer" onClick={triggerFileInput}>
               <Avatar className="w-24 h-24 mb-4 border-2 border-white">
-                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
-                <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+                <AvatarImage 
+                  src={currentUser?.photoURL || undefined} 
+                  alt={userName}
+                  className="object-cover" 
+                />
+                <AvatarFallback className="bg-primary text-white text-xl font-semibold">
+                  {userName.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
               
               {/* Overlay con icona ed effetto al passaggio del mouse */}
