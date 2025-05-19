@@ -1,0 +1,339 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import AppLayout from "@/components/layout/app-layout";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Rating } from "@/components/ui/rating";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+export default function Profile() {
+  const [, navigate] = useLocation();
+  const { currentUser, userProfile } = useAuth();
+  const [userName, setUserName] = useState<string>("");
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    packagesSent: 0,
+    tripsReported: 0,
+    totalEarned: 0,
+    totalSpent: 0,
+  });
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    if (userProfile) {
+      setUserName(userProfile.displayName || "");
+    }
+
+    const fetchData = async () => {
+      try {
+        // Fetch reviews
+        const reviewsQuery = query(
+          collection(db, "reviews"),
+          where("receiverId", "==", currentUser.uid),
+          orderBy("createdAt", "desc"),
+          limit(5)
+        );
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        
+        const reviewsData = await Promise.all(
+          reviewsSnapshot.docs.map(async (doc) => {
+            const reviewData = doc.data();
+            
+            // Get sender info
+            const userQuery = query(
+              collection(db, "users"),
+              where("uid", "==", reviewData.senderId)
+            );
+            const userSnapshot = await getDocs(userQuery);
+            
+            const userData = !userSnapshot.empty ? userSnapshot.docs[0].data() : null;
+            
+            return {
+              id: doc.id,
+              ...reviewData,
+              sender: userData ? {
+                name: userData.displayName || "Unknown",
+                photoURL: userData.photoURL
+              } : null
+            };
+          })
+        );
+        
+        setReviews(reviewsData);
+        
+        // Fetch stats
+        const packagesQuery = query(
+          collection(db, "packages"),
+          where("userId", "==", currentUser.uid)
+        );
+        const packagesSnapshot = await getDocs(packagesQuery);
+        
+        const tripsQuery = query(
+          collection(db, "trips"),
+          where("userId", "==", currentUser.uid)
+        );
+        const tripsSnapshot = await getDocs(tripsQuery);
+        
+        // Calculate total spent on packages
+        const totalSpent = packagesSnapshot.docs.reduce((sum, doc) => {
+          const packageData = doc.data();
+          return sum + (packageData.price || 0);
+        }, 0);
+        
+        // Calculate total earned from trips with completed matches
+        let totalEarned = 0;
+        for (const tripDoc of tripsSnapshot.docs) {
+          const matchesQuery = query(
+            collection(db, "matches"),
+            where("tripId", "==", tripDoc.id),
+            where("status", "==", "completed")
+          );
+          const matchesSnapshot = await getDocs(matchesQuery);
+          
+          for (const matchDoc of matchesSnapshot.docs) {
+            const matchData = matchDoc.data();
+            
+            const packageQuery = query(
+              collection(db, "packages"),
+              where("__name__", "==", matchData.packageId)
+            );
+            const packageSnapshot = await getDocs(packageQuery);
+            
+            if (!packageSnapshot.empty) {
+              const packageData = packageSnapshot.docs[0].data();
+              totalEarned += packageData.price || 0;
+            }
+          }
+        }
+        
+        setStats({
+          packagesSent: packagesSnapshot.size,
+          tripsReported: tripsSnapshot.size,
+          totalEarned,
+          totalSpent
+        });
+        
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+
+    fetchData();
+  }, [currentUser, navigate, userProfile]);
+
+  const handleUpdateProfile = async () => {
+    if (!currentUser) return;
+    
+    setIsLoading(true);
+    
+    try {
+      if (userName.trim() && userName !== userProfile?.displayName) {
+        await updateProfile(currentUser, {
+          displayName: userName.trim()
+        });
+      }
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "Unknown date";
+    
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "Invalid date";
+    }
+  };
+
+  return (
+    <AppLayout>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profile</h1>
+
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+          <div className="p-6 flex flex-col items-center">
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+              <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+            
+            {isEditing ? (
+              <div className="w-full max-w-xs mb-4">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full bg-neutral-100 rounded-lg px-4 py-2 border border-neutral-300 text-center mb-2"
+                />
+                <div className="flex justify-center space-x-2">
+                  <Button
+                    onClick={() => setIsEditing(false)}
+                    variant="outline"
+                    className="px-4"
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleUpdateProfile}
+                    className="px-4 bg-primary text-white"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold text-neutral-900 mb-1">{userName || "User"}</h2>
+                <p className="text-neutral-500 mb-2">{currentUser?.phoneNumber}</p>
+                <div className="flex items-center mb-4">
+                  <Rating value={userProfile?.rating || 0} readOnly size="sm" />
+                  <span className="text-sm text-neutral-500 ml-1">
+                    {userProfile?.rating?.toFixed(1) || "0.0"} ({userProfile?.reviewCount || 0} reviews)
+                  </span>
+                </div>
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  className="text-neutral-700 bg-neutral-100"
+                >
+                  Edit Profile
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Activity Stats</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Packages Sent</p>
+                <p className="text-xl font-semibold text-neutral-900">{stats.packagesSent}</p>
+              </div>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Trips Reported</p>
+                <p className="text-xl font-semibold text-neutral-900">{stats.tripsReported}</p>
+              </div>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Total Earned</p>
+                <p className="text-xl font-semibold text-secondary">{stats.totalEarned}€</p>
+              </div>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Total Spent</p>
+                <p className="text-xl font-semibold text-primary">{stats.totalSpent}€</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {reviews.length > 0 && (
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-4">Recent Reviews</h3>
+              
+              {reviews.map((review) => (
+                <div key={review.id} className="mb-4 border-b border-neutral-100 pb-4 last:border-0 last:mb-0 last:pb-0">
+                  <div className="flex items-start">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={review.sender?.photoURL} alt={review.sender?.name} />
+                      <AvatarFallback>{review.sender?.name.charAt(0) || "U"}</AvatarFallback>
+                    </Avatar>
+                    <div className="ml-3 flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-neutral-900">{review.sender?.name || "Anonymous"}</p>
+                          <div className="flex items-center">
+                            <Rating value={review.rating} readOnly size="sm" />
+                            <span className="text-xs text-neutral-500 ml-2">
+                              {formatDate(review.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-neutral-700 mt-1 text-sm">{review.comment}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Legal Information</h3>
+            <div className="text-sm text-neutral-500 space-y-3">
+              <p>
+                <strong className="font-medium text-neutral-700">Disclaimer:</strong> PackShare is not responsible for the contents of packages. Users are solely responsible for ensuring their packages comply with all applicable laws and regulations.
+              </p>
+              <p>
+                <strong className="font-medium text-neutral-700">Privacy Policy:</strong> We collect minimal personal information required to provide our service. Your data is protected and never shared with third parties.
+              </p>
+              <p>
+                <strong className="font-medium text-neutral-700">Terms of Service:</strong> By using PackShare, you agree to our terms which include behaving respectfully to other users and not misusing the platform.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full bg-neutral-100 text-neutral-700 font-medium rounded-lg py-4 h-auto mb-4"
+        >
+          Log Out
+        </Button>
+
+        <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will need to login with your phone number again to access your account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>Log Out</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </AppLayout>
+  );
+}
