@@ -1,0 +1,135 @@
+🛠️ OBIETTIVO DELL’APP
+Costruisci un'app mobile semplice, intuitiva e funzionale che mette in contatto:
+
+Chi vuole spedire un pacco (es. dall’Italia alla Tunisia o viceversa)
+
+Con chi sta per viaggiare e può portarlo (es. in macchina, aereo o traghetto)
+
+L’obiettivo è facilitare il contatto, la comunicazione e l’accordo tra queste due persone in modo rapido, sicuro e senza complicazioni.
+
+🧱 STACK TECNICO
+Frontend: React Native (Expo)
+
+Backend + DB: Firebase (Auth, Firestore, Storage, Push Notification)
+
+Linguaggio: TypeScript
+
+Design: Minimal, chiaro, intuitivo (stile WhatsApp/BlaBlaCar)
+
+🖥️ STRUTTURA APP – PAGINE E FUNZIONALITÀ
+1. Login Screen
+Login con numero di telefono
+
+Verifica via OTP SMS
+
+Salvataggio su Firebase Auth
+
+2. Home Screen
+Titolo: “Cosa vuoi fare oggi?”
+Due pulsanti grandi:
+
+🔵 Spedisci un pacco
+
+🟢 Segnala un viaggio
+
+3. Spedisci un Pacco (Form di pubblicazione)
+Campi:
+
+Da (es. Milano) [autocomplete o geolocalizzazione]
+
+A (es. Tunisi)
+
+Entro quando (data)
+
+Dimensione pacco (piccolo/medio/grande)
+
+Offerta (€)
+
+Foto del pacco (facoltativo)
+
+Pulsante: Cerca viaggiatori
+
+Risultato: lista viaggiatori compatibili con rating + data
+Se non ci sono → salva richiesta e manda notifica quando uno è disponibile
+
+4. Segnala un Viaggio (Form)
+Campi:
+
+Da (es. Roma)
+
+A (es. Sfax)
+
+Data del viaggio
+
+Spazio disponibile (1/2/3 pacchi)
+
+Note (facoltative)
+
+Pulsante: Trova pacchi
+
+Risultato: lista pacchi compatibili
+
+5. Chat
+Sistema di chat 1:1 tra mittente e viaggiatore
+
+Testo + audio + posizione condivisibile
+
+Pulsanti rapidi:
+
+📍 Concorda luogo
+
+💸 Concorda prezzo
+
+📦 Consegna effettuata
+
+6. Le mie spedizioni / I miei viaggi
+Due tab: uno mostra i pacchi richiesti
+
+L’altro i viaggi pubblicati
+
+Stato: in attesa / in corso / completato
+
+7. Recensioni
+Dopo la consegna: stelline (1-5) + commento
+
+Profilo con media voti
+
+🧠 REGOLE DI DESIGN
+Nessun menu complicato
+
+Massimo 3 tocchi per fare tutto
+
+Tutto si capisce al primo sguardo
+
+Colori: bianco, blu, verde, nero (sobri, chiari)
+
+Font leggibile, tasti grandi
+
+🛡️ SICUREZZA BASE
+Verifica telefono
+
+Chat interna
+
+Recensioni
+
+Disclaimer chiaro: l’app non è responsabile dei contenuti dei pacchi
+
+🧪 MVP TESTABILE
+L’obiettivo è creare un’app funzionante (non perfetta) da testare subito con veri utenti. Quindi:
+
+Niente animazioni inutili
+
+Niente profili complessi
+
+Nessuna registrazione con email/social per ora
+
+📱 OUTPUT ATTESO
+App React Native Expo
+
+Funziona su iOS e Android
+
+Tutto collegato a Firebase
+
+Design minimal
+
+Login, pubblicazione pacco/viaggio, matching, chat e feedback = TUTTO FUNZIONANTE
