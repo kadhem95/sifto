@@ -53,7 +53,7 @@ export default function Home() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Send a Package
+                Invia un Pacco
               </Button>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function Home() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Report a Trip
+                Segnala un Viaggio
               </Button>
             </div>
           </div>

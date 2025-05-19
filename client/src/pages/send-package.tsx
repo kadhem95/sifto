@@ -11,11 +11,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
 
 const packageFormSchema = z.object({
-  from: z.string().min(2, "Origin location is required"),
-  to: z.string().min(2, "Destination location is required"),
-  deadline: z.string().min(1, "Deadline is required"),
+  from: z.string().min(2, "È richiesta la località di origine"),
+  to: z.string().min(2, "È richiesta la località di destinazione"),
+  deadline: z.string().min(1, "È richiesta una data di scadenza"),
   size: z.enum(["small", "medium", "large"]),
-  price: z.coerce.number().min(1, "Please enter a valid price"),
+  price: z.coerce.number().min(1, "Inserisci un prezzo valido"),
 });
 
 type PackageFormValues = z.infer<typeof packageFormSchema>;
@@ -116,18 +116,18 @@ export default function SendPackage() {
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-neutral-900 ml-2">
-            Send a Package
+            Invia un Pacco
           </h1>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
-            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">From</Label>
+            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
             <div className="relative">
               <Input
                 id="from"
                 className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-                placeholder="e.g. Milan"
+                placeholder="es. Milano"
                 {...register("from")}
               />
               <button type="button" className="absolute right-3 top-3">
@@ -151,7 +151,7 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">To</Label>
+            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
             <Input
               id="to"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
