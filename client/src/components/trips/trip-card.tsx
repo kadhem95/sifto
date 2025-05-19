@@ -48,19 +48,19 @@ export default function TripCard({
     if (daysToDeadline === 0) {
       return (
         <div className="bg-warning/10 text-warning px-3 py-1 rounded-full text-sm font-medium">
-          On deadline
+          Scadenza oggi
         </div>
       );
     } else if (daysToDeadline > 0) {
       return (
         <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-          {daysToDeadline} {daysToDeadline === 1 ? 'day' : 'days'} before deadline
+          {daysToDeadline} {daysToDeadline === 1 ? 'giorno' : 'giorni'} alla scadenza
         </div>
       );
     } else {
       return (
         <div className="bg-red-500/10 text-red-500 px-3 py-1 rounded-full text-sm font-medium">
-          {Math.abs(daysToDeadline)} {Math.abs(daysToDeadline) === 1 ? 'day' : 'days'} late
+          {Math.abs(daysToDeadline)} {Math.abs(daysToDeadline) === 1 ? 'giorno' : 'giorni'} di ritardo
         </div>
       );
     }
@@ -79,7 +79,7 @@ export default function TripCard({
             <div className="flex items-center">
               <Rating value={traveler.rating} readOnly size="sm" />
               <span className="text-sm text-neutral-500 ml-1">
-                {traveler.rating.toFixed(1)} ({traveler.reviewCount} reviews)
+                {traveler.rating.toFixed(1)} ({traveler.reviewCount} recensioni)
               </span>
             </div>
           </div>
@@ -94,12 +94,12 @@ export default function TripCard({
         </div>
 
         <div className="mt-3 flex justify-between items-center">
-          <span className="text-neutral-500">Space for {capacity} {capacity === 1 ? 'package' : 'packages'}</span>
+          <span className="text-neutral-500">Spazio per {capacity} {capacity === 1 ? 'pacco' : 'pacchi'}</span>
           <Button
             onClick={() => onContact(id)}
             className="bg-primary text-white font-medium rounded-lg px-4 py-2 h-auto"
           >
-            Contact
+            Contatta
           </Button>
         </div>
       </div>

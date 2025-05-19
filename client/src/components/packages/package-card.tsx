@@ -48,11 +48,11 @@ export default function PackageCard({
   const getSizeLabel = () => {
     switch (size) {
       case "small":
-        return "Small package";
+        return "Pacco piccolo";
       case "medium":
-        return "Medium package";
+        return "Pacco medio";
       case "large":
-        return "Large package";
+        return "Pacco grande";
     }
   };
 
@@ -78,7 +78,7 @@ export default function PackageCard({
             <div className="flex items-center">
               <Rating value={sender.rating} readOnly size="sm" />
               <span className="text-sm text-neutral-500 ml-1">
-                {sender.rating.toFixed(1)} ({sender.reviewCount} reviews)
+                {sender.rating.toFixed(1)} ({sender.reviewCount} recensioni)
               </span>
             </div>
           </div>
@@ -87,11 +87,11 @@ export default function PackageCard({
         <div className="flex justify-between items-center py-2 border-t border-b border-neutral-200 my-2">
           <div>
             <p className="text-neutral-900">{from} → {to}</p>
-            <p className="text-sm text-neutral-500">By {formatDate(deadline)}</p>
+            <p className="text-sm text-neutral-500">Entro il {formatDate(deadline)}</p>
           </div>
           <div className="flex items-center">
             <span className="text-neutral-900 font-medium text-lg">{price}€</span>
-            <span className="ml-1 text-sm text-neutral-500">offered</span>
+            <span className="ml-1 text-sm text-neutral-500">offerti</span>
           </div>
         </div>
 
@@ -104,7 +104,7 @@ export default function PackageCard({
             onClick={() => onContact(id)}
             className="bg-secondary text-white font-medium rounded-lg px-4 py-2 h-auto"
           >
-            Contact
+            Contatta
           </Button>
         </div>
       </div>
