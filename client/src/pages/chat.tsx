@@ -20,7 +20,8 @@ import {
   onSnapshot, 
   getDoc, 
   where, 
-  getDocs 
+  getDocs,
+  updateDoc
 } from "firebase/firestore";
 
 interface Message {
@@ -83,11 +84,13 @@ export default function Chat() {
           const participantProfile = await getUserProfile(participantId);
           
           if (participantProfile) {
+            // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
+            const profileData = participantProfile as any;
             setParticipant({
-              id: participantProfile.uid,
-              name: participantProfile.displayName || "Unknown User",
-              photoURL: participantProfile.photoURL,
-              isOnline: true // For demo purposes, always show as online
+              id: profileData.uid || "",
+              name: profileData.displayName || "Utente sconosciuto",
+              photoURL: profileData.photoURL,
+              isOnline: true // Per scopi dimostrativi, mostriamo sempre come online
             });
           }
         }
@@ -167,8 +170,62 @@ export default function Chat() {
     }
   };
 
-  const handleDeliveryComplete = () => {
-    handleQuickAction("📦 Package delivery complete!");
+  const handleDeliveryComplete = async () => {
+    if (!currentUser) return;
+    
+    await handleQuickAction("📦 Pacco consegnato con successo!");
+    
+    // Aggiorniamo lo stato della consegna nel database
+    if (chatDetails?.packageId || chatDetails?.tripId) {
+      try {
+        const packageId = chatDetails?.packageId;
+        const tripId = chatDetails?.tripId;
+        
+        // Aggiorniamo lo stato del match per segnalare che è stato consegnato
+        // e che è pronto per essere recensito
+        if (packageId) {
+          const matchRef = collection(db, "matches");
+          const matchQuery = query(
+            matchRef,
+            where("packageId", "==", packageId),
+            where("tripId", "==", tripId || null)
+          );
+          
+          const matchSnapshot = await getDocs(matchQuery);
+          if (!matchSnapshot.empty) {
+            const matchDoc = matchSnapshot.docs[0];
+            await updateDoc(doc(db, "matches", matchDoc.id), {
+              status: "completed",
+              completedAt: new Date().toISOString(),
+              reviewPending: true
+            });
+            
+            // Invia un messaggio informativo nella chat
+            await sendMessage(
+              id, 
+              currentUser.uid, 
+              "📝 Il pacco è stato consegnato! Ora è possibile lasciare una recensione", 
+              "text"
+            );
+            
+            // Inseriamo un messaggio con informazioni sulla recensione
+            setTimeout(async () => {
+              if (currentUser) {
+                const matchId = matchDoc.id;
+                await sendMessage(
+                  id, 
+                  currentUser.uid, 
+                  "Per lasciare una recensione, vai nella sezione 'Le mie spedizioni' e seleziona questa consegna", 
+                  "text"
+                );
+              }
+            }, 500);
+          }
+        }
+      } catch (error) {
+        console.error("Errore nell'aggiornamento dello stato di consegna:", error);
+      }
+    }
   };
 
   const goBackToList = () => {
