@@ -217,75 +217,99 @@ export default function Profile() {
       
       console.log("Caricamento file su Firebase Storage...");
       
-      // Carica il file
-      await uploadBytes(storageRef, file);
+      // Metodo 1: Utilizzo di uploadBytesResumable per monitorare il progresso
+      const uploadTask = uploadBytes(storageRef, file);
       
-      // Ottieni l'URL di download
-      console.log("Ottenimento URL di download...");
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      console.log("URL ottenuto:", downloadURL);
-      
-      // Aggiorna l'URL della foto nel profilo di autenticazione
-      console.log("Aggiornamento profilo autenticazione...");
-      await updateProfile(currentUser, {
-        photoURL: downloadURL
-      });
-      
-      // Forza il refresh dell'oggetto currentUser
-      const auth = getAuth();
-      if (auth.currentUser) {
-        // Aggiorna manualmente il riferimento locale
-        const updatedUser = auth.currentUser;
-        console.log("Profilo aggiornato:", updatedUser);
-      }
-      
-      // Aggiorna anche nel database Firestore
-      console.log("Aggiornamento database Firestore...");
-      const userQuery = query(
-        collection(db, "users"),
-        where("uid", "==", currentUser.uid)
-      );
-      const userSnapshot = await getDocs(userQuery);
-      
-      if (!userSnapshot.empty) {
-        // Aggiorna il documento esistente
-        const userDoc = userSnapshot.docs[0];
-        await updateDoc(doc(db, "users", userDoc.id), {
-          photoURL: downloadURL
+      // Usa then invece di await per migliorare la gestione degli errori
+      uploadTask.then(async (snapshot) => {
+        console.log("Upload completato:", snapshot);
+        console.log("Dimensione totale:", snapshot.metadata.size);
+        
+        // Ottieni l'URL di download
+        console.log("Ottenimento URL di download...");
+        try {
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          console.log("URL ottenuto:", downloadURL);
+          
+          if (!downloadURL) {
+            throw new Error("URL di download non valido");
+          }
+          
+          // Creazione di una nuova immagine per verificare l'URL
+          const img = new Image();
+          img.src = downloadURL;
+          
+          // Aggiorna l'URL della foto nel profilo di autenticazione
+          console.log("Aggiornamento profilo autenticazione...");
+          await updateProfile(currentUser, {
+            photoURL: downloadURL
+          });
+          
+          // Aggiorna anche nel database Firestore
+          console.log("Aggiornamento database Firestore...");
+          const userQuery = query(
+            collection(db, "users"),
+            where("uid", "==", currentUser.uid)
+          );
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            // Aggiorna il documento esistente
+            const userDoc = userSnapshot.docs[0];
+            await updateDoc(doc(db, "users", userDoc.id), {
+              photoURL: downloadURL
+            });
+            console.log("Documento Firestore aggiornato");
+          } else {
+            // Se l'utente non esiste nel database, crealo
+            const newUserDoc = await addDoc(collection(db, "users"), {
+              uid: currentUser.uid,
+              displayName: currentUser.displayName || "",
+              photoURL: downloadURL,
+              createdAt: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0
+            });
+            console.log("Nuovo documento Firestore creato:", newUserDoc.id);
+          }
+          
+          // Aggiorna lo stato locale con il nuovo URL
+          // Questo evita di dover ricaricare la pagina
+          const profileImage = document.querySelector('.avatar-image') as HTMLImageElement;
+          if (profileImage) {
+            profileImage.src = downloadURL;
+            console.log("Immagine profilo aggiornata nel DOM");
+          }
+          
+          // Mostra un messaggio di conferma
+          toast({
+            title: "Immagine caricata",
+            description: "La tua immagine del profilo è stata aggiornata",
+            variant: "default"
+          });
+          
+        } catch (urlError) {
+          console.error("Errore nel recupero dell'URL:", urlError);
+          throw urlError;
+        }
+      }).catch((error) => {
+        console.error("Errore durante l'upload:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un problema durante il caricamento dell'immagine",
+          variant: "destructive"
         });
-        console.log("Documento Firestore aggiornato");
-      } else {
-        // Se l'utente non esiste nel database, crealo
-        const newUserDoc = await addDoc(collection(db, "users"), {
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || "",
-          photoURL: downloadURL,
-          createdAt: new Date().toISOString(),
-          rating: 0,
-          reviewCount: 0
-        });
-        console.log("Nuovo documento Firestore creato:", newUserDoc.id);
-      }
-      
-      // Mostra un messaggio di conferma
-      toast({
-        title: "Immagine caricata",
-        description: "La tua immagine del profilo è stata aggiornata",
-        variant: "default"
+      }).finally(() => {
+        setIsUploadingImage(false);
       });
-      
-      // Forza un refresh della pagina per aggiornare l'immagine
-      window.location.reload();
       
     } catch (error: any) {
-      console.error("Error uploading profile image:", error);
+      console.error("Error preparing upload:", error);
       toast({
         title: "Errore",
-        description: error.message || "Si è verificato un problema durante il caricamento dell'immagine",
+        description: error.message || "Si è verificato un problema durante la preparazione del caricamento",
         variant: "destructive"
       });
-    } finally {
       setIsUploadingImage(false);
     }
   };
@@ -332,7 +356,7 @@ export default function Profile() {
                 <AvatarImage 
                   src={currentUser?.photoURL || undefined} 
                   alt={userName}
-                  className="object-cover" 
+                  className="object-cover avatar-image" 
                 />
                 <AvatarFallback className="bg-primary text-white text-xl font-semibold">
                   {userName.charAt(0)?.toUpperCase() || "U"}
