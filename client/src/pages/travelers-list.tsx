@@ -152,7 +152,7 @@ export default function TravelersList() {
         <div className="p-6 flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-neutral-500">Loading travelers...</p>
+            <p className="text-neutral-500">Caricamento viaggiatori...</p>
           </div>
         </div>
       </AppLayout>
@@ -180,7 +180,7 @@ export default function TravelersList() {
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-neutral-900 ml-2">
-            Available Travelers
+            Viaggiatori Disponibili
           </h1>
         </div>
 
@@ -188,14 +188,14 @@ export default function TravelersList() {
           <div className="bg-neutral-100 rounded-lg p-4 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-neutral-900 font-medium">Your package</p>
+                <p className="text-neutral-900 font-medium">Il tuo pacco</p>
                 <p className="text-neutral-500">{packageDetails.from} → {packageDetails.to}</p>
               </div>
               <div className="text-right">
                 <p className="text-neutral-900 font-medium">
-                  By {new Date(packageDetails.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  Entro {new Date(packageDetails.deadline).toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
-                <p className="text-neutral-500">{packageDetails.price}€ offered</p>
+                <p className="text-neutral-500">{packageDetails.price}€ offerti</p>
               </div>
             </div>
           </div>
@@ -217,9 +217,9 @@ export default function TravelersList() {
           ))
         ) : (
           <div className="p-4 bg-neutral-100 rounded-lg text-center">
-            <p className="text-neutral-500 mb-2">No travelers available</p>
+            <p className="text-neutral-500 mb-2">Nessun viaggiatore disponibile</p>
             <p className="text-sm text-neutral-500">
-              We'll notify you when new travelers match your needs
+              Ti avviseremo quando nuovi viaggiatori corrispondono alle tue esigenze
             </p>
           </div>
         )}

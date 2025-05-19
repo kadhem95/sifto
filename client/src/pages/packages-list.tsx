@@ -174,7 +174,7 @@ export default function PackagesList() {
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-neutral-900 ml-2">
-            Available Packages
+            Pacchi Disponibili
           </h1>
         </div>
 
@@ -182,12 +182,12 @@ export default function PackagesList() {
           <div className="bg-neutral-100 rounded-lg p-4 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-neutral-900 font-medium">Your trip</p>
+                <p className="text-neutral-900 font-medium">Il tuo viaggio</p>
                 <p className="text-neutral-500">{tripDetails.from} → {tripDetails.to}</p>
               </div>
               <div className="text-right">
                 <p className="text-neutral-900 font-medium">
-                  {new Date(tripDetails.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {new Date(tripDetails.date).toLocaleDateString("it-IT", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
                 <p className="text-neutral-500">Space for {tripDetails.capacity} {tripDetails.capacity === 1 ? 'package' : 'packages'}</p>
               </div>
