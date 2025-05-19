@@ -184,7 +184,7 @@ export default function Review() {
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-neutral-900 ml-2">
-            Leave a Review
+            Lascia una Recensione
           </h1>
         </div>
 
@@ -213,7 +213,7 @@ export default function Review() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label className="block text-neutral-700 font-medium mb-3">Your rating</label>
+            <label className="block text-neutral-700 font-medium mb-3">La tua valutazione</label>
             <div className="flex justify-center space-x-2">
               <Rating
                 value={rating}
@@ -225,13 +225,20 @@ export default function Review() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-neutral-700 font-medium mb-2">Your comment</label>
+            <label className="block text-neutral-700 font-medium mb-2">La tua recensione (opzionale)</label>
             <Textarea
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-32 resize-none"
-              placeholder="Share your experience..."
+              placeholder="Molto gentile e puntuale. Il pacco è arrivato senza problemi."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => {
+                // Limita a 200 caratteri
+                if (e.target.value.length <= 200) {
+                  setComment(e.target.value);
+                }
+              }}
+              maxLength={200}
             />
+            <p className="text-xs text-right mt-1 text-neutral-500">{comment.length}/200 caratteri</p>
           </div>
 
           <Button
@@ -242,10 +249,10 @@ export default function Review() {
             {isSubmitting ? (
               <div className="flex items-center justify-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Submitting...
+                Invio in corso...
               </div>
             ) : (
-              "Submit Review"
+              "Invia Recensione"
             )}
           </Button>
         </form>

@@ -32,15 +32,15 @@ export default function QuickActions({
     <div className="p-3 border-t border-neutral-200 bg-white flex items-center">
       <div className="flex space-x-2 mb-2 mx-2 overflow-x-auto w-full">
         <QuickActionButton 
-          text="📍 Set meeting point" 
+          text="📍 Punto d'incontro" 
           onClick={onMeetingPoint} 
         />
         <QuickActionButton 
-          text="💸 Confirm price" 
+          text="💸 Conferma prezzo" 
           onClick={onConfirmPrice} 
         />
         <QuickActionButton 
-          text="📦 Delivery complete" 
+          text="📦 Pacco consegnato" 
           onClick={onDeliveryComplete} 
         />
       </div>
