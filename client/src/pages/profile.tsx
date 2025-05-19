@@ -194,6 +194,77 @@ export default function Profile() {
     }
   };
 
+  // Funzione per gestire l'upload dell'immagine del profilo
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+    
+    setIsUploadingImage(true);
+    
+    try {
+      // Crea un riferimento allo storage con un nome file unico
+      const storageRef = ref(storage, `profile_images/${currentUser.uid}_${new Date().getTime()}`);
+      
+      // Carica il file
+      const uploadTask = await uploadBytes(storageRef, file);
+      
+      // Ottieni l'URL di download
+      const downloadURL = await getDownloadURL(uploadTask.ref);
+      
+      // Aggiorna l'URL della foto nel profilo di autenticazione
+      await updateProfile(currentUser, {
+        photoURL: downloadURL
+      });
+      
+      // Aggiorna anche nel database Firestore
+      const userQuery = query(
+        collection(db, "users"),
+        where("uid", "==", currentUser.uid)
+      );
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        // Aggiorna il documento esistente
+        const userDoc = userSnapshot.docs[0];
+        await updateDoc(doc(db, "users", userDoc.id), {
+          photoURL: downloadURL
+        });
+      } else {
+        // Se l'utente non esiste nel database, crealo
+        await addDoc(collection(db, "users"), {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || "",
+          photoURL: downloadURL,
+          createdAt: new Date().toISOString(),
+          rating: 0,
+          reviewCount: 0
+        });
+      }
+      
+      // Mostra un messaggio di conferma
+      toast({
+        title: "Immagine caricata",
+        description: "La tua immagine del profilo è stata aggiornata",
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error("Error uploading profile image:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un problema durante il caricamento dell'immagine",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+  
+  // Funzione per aprire il selettore di file
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
   const handleLogout = async () => {
     const auth = getAuth();
     try {
@@ -226,10 +297,42 @@ export default function Profile() {
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-6 flex flex-col items-center">
-            <Avatar className="w-24 h-24 mb-4">
-              <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
-              <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
-            </Avatar>
+            <div className="relative group cursor-pointer" onClick={triggerFileInput}>
+              <Avatar className="w-24 h-24 mb-4 border-2 border-white">
+                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+                <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+              </Avatar>
+              
+              {/* Overlay con icona ed effetto al passaggio del mouse */}
+              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              
+              {/* Indicatore di caricamento */}
+              {isUploadingImage && (
+                <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Input file nascosto */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              className="hidden"
+              accept="image/*"
+              disabled={isUploadingImage}
+            />
+            
+            {/* Suggerimento per l'utente */}
+            <p className="text-xs text-neutral-500 mb-2 text-center">
+              Tocca l'immagine per caricare una foto
+            </p>
             
             {isEditing ? (
               <div className="w-full max-w-xs mb-4">
