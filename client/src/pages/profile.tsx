@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -7,16 +7,21 @@ import { Rating } from "@/components/ui/rating";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
   const [, navigate] = useLocation();
   const { currentUser, userProfile } = useAuth();
+  const { toast } = useToast();
   const [userName, setUserName] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [stats, setStats] = useState({
     packagesSent: 0,
@@ -139,14 +144,51 @@ export default function Profile() {
     
     try {
       if (userName.trim() && userName !== userProfile?.displayName) {
+        // Aggiorna il nome nell'autenticazione Firebase
         await updateProfile(currentUser, {
           displayName: userName.trim()
+        });
+        
+        // Aggiorna il nome nel profilo Firestore
+        const userQuery = query(
+          collection(db, "users"),
+          where("uid", "==", currentUser.uid)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          // Aggiorna il documento esistente
+          const userDoc = userSnapshot.docs[0];
+          await updateDoc(doc(db, "users", userDoc.id), {
+            displayName: userName.trim()
+          });
+        } else {
+          // Crea un nuovo documento utente se non esiste
+          await addDoc(collection(db, "users"), {
+            uid: currentUser.uid,
+            displayName: userName.trim(),
+            createdAt: new Date().toISOString(),
+            rating: 0,
+            reviewCount: 0
+          });
+        }
+        
+        // Mostra un messaggio di conferma con toast
+        toast({
+          title: "Profilo aggiornato",
+          description: "Il tuo nome è stato salvato correttamente",
+          variant: "default"
         });
       }
       
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un problema durante il salvataggio del profilo",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
