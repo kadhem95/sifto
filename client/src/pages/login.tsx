@@ -64,7 +64,7 @@ export default function Login() {
         </div>
         <h1 className="text-3xl font-bold text-neutral-900 mb-2">PackShare</h1>
         <p className="text-neutral-500 text-center mb-8">
-          Connect package senders with travelers
+          Connette spedizionieri con viaggiatori
         </p>
 
         <div className="w-full max-w-md">

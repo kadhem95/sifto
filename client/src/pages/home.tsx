@@ -19,7 +19,7 @@ export default function Home() {
     <AppLayout>
       <div className="p-6">
         <h1 className="text-2xl font-bold text-neutral-900 mb-6">
-          What would you like to do today?
+          Cosa vorresti fare oggi?
         </h1>
 
         <div className="flex flex-col gap-4">
@@ -32,10 +32,10 @@ export default function Home() {
             />
             <div className="p-5">
               <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                Send a Package
+                Invia un Pacco
               </h2>
               <p className="text-neutral-500 mb-4">
-                Find travelers heading to your destination who can carry your package
+                Trova viaggiatori diretti alla tua destinazione che possono trasportare il tuo pacco
               </p>
               <Button
                 onClick={handleSendPackage}
@@ -67,10 +67,10 @@ export default function Home() {
             />
             <div className="p-5">
               <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                Report a Trip
+                Segnala un Viaggio
               </h2>
               <p className="text-neutral-500 mb-4">
-                Tell us about your upcoming trip and earn by delivering packages
+                Raccontaci del tuo prossimo viaggio e guadagna consegnando pacchi
               </p>
               <Button
                 onClick={handleReportTrip}
