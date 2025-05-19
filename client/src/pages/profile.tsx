@@ -204,14 +204,14 @@ export default function Profile() {
                     className="px-4"
                     disabled={isLoading}
                   >
-                    Cancel
+                    Annulla
                   </Button>
                   <Button
                     onClick={handleUpdateProfile}
                     className="px-4 bg-primary text-white"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Saving..." : "Save"}
+                    {isLoading ? "Salvataggio..." : "Salva"}
                   </Button>
                 </div>
               </div>

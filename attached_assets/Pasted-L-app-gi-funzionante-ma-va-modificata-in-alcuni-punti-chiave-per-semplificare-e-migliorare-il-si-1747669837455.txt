@@ -1,0 +1,94 @@
+L’app è già funzionante, ma va modificata in alcuni punti chiave per semplificare e migliorare il sistema di matching tra chi spedisce e chi viaggia.
+Le modifiche da fare sono specifiche e ragionate con buon senso per rendere l'app più reale, più umana, più semplice da usare.
+
+✅ 1. Rimuovere il sistema attuale “disponibilità pacchi (1,2,3)”
+Questo sistema va eliminato completamente perché è poco realistico.
+
+Non serve che il viaggiatore dichiari “posso portare 2 pacchi”: ogni pacco è diverso.
+
+Chi viaggia decide visivamente se può accettare un pacco, guardando foto + dimensioni + dettagli.
+
+Da fare:
+
+Rimuovi dal form “Segnala un viaggio” il campo “numero di pacchi disponibili”
+
+Elimina anche dal backend eventuale gestione logica collegata
+
+✅ 2. Aggiungere nel form “Segnala un Viaggio” solo il tipo di mezzo
+Campo nuovo: Tipo di mezzo
+Opzioni:
+
+🚗 Auto piccola
+
+🚙 SUV / Station Wagon
+
+🚐 Van / Furgone
+
+✈️ Bagaglio aereo
+
+Questo campo serve solo come info per il mittente, NON influenza la logica automatica. È solo visibile nei risultati e nel profilo.
+
+✅ 3. Rendere la decisione di accettare un pacco completamente manuale
+Quando il viaggiatore trova pacchi compatibili con la tratta:
+
+Deve vedere la foto del pacco
+
+Deve vedere la taglia (piccolo / medio / grande) e eventualmente le misure
+
+Deve vedere la ricompensa
+
+Decide se accettare o no con un pulsante “Accetta”
+
+Da fare:
+
+Mostrare le info principali dei pacchi nella lista risultati
+
+Rimuovere qualsiasi controllo automatico sullo spazio disponibile
+
+✅ 4. Aggiorna il flusso di matching
+Il matching deve funzionare solo su:
+
+Città di partenza e arrivo
+
+Finestra di tempo compatibile
+
+Dopo il match:
+
+Si apre la chat
+
+Lì le due persone si accordano liberamente
+
+✅ 5. Controlla e aggiorna il testo / UI
+Rimuovi qualsiasi riferimento a “hai ancora spazio per 2 pacchi”
+
+Se ci sono vecchie scritte come “puoi accettare altri 2 colli”, eliminale o sostituiscile con:
+
+“Guarda il pacco e decidi tu se portarlo”
+
+✅ ESEMPIO DI COME DEVE FUNZIONARE ORA
+Ahmed pubblica un pacco con:
+
+Foto
+
+Taglia: media
+
+Da: Milano → Tunisi
+
+Offerta: 50€
+
+Khaled pubblica un viaggio:
+
+Da: Brescia → Tunisi
+
+Data: 28 maggio
+
+Tipo mezzo: SUV
+
+L’app fa il match e mostra il pacco adatto
+
+Khaled guarda la foto, legge i dettagli e clicca “accetta”
+
+Si apre la chat → accordo libero
+
+Obiettivo:
+L’app deve sembrare una piattaforma semplice e naturale come WhatsApp + BlaBlaCar, dove ognuno si prende la libertà di decidere guardando e parlando, senza vincoli artificiali.
