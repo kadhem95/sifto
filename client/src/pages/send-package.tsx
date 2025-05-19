@@ -14,7 +14,8 @@ const packageFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di origine"),
   to: z.string().min(2, "È richiesta la località di destinazione"),
   deadline: z.string().min(1, "È richiesta una data di scadenza"),
-  size: z.enum(["small", "medium", "large"]),
+  description: z.string().min(3, "Inserisci una descrizione del pacco"),
+  dimensions: z.string().optional(),
   price: z.coerce.number().min(1, "Inserisci un prezzo valido"),
 });
 
@@ -24,7 +25,6 @@ export default function SendPackage() {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">("small");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -39,15 +39,11 @@ export default function SendPackage() {
       from: "",
       to: "",
       deadline: "",
-      size: "small",
+      description: "",
+      dimensions: "",
       price: 0,
     },
   });
-
-  const handleSizeSelect = (size: "small" | "medium" | "large") => {
-    setSelectedSize(size);
-    setValue("size", size);
-  };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,6 +63,11 @@ export default function SendPackage() {
       return;
     }
 
+    if (!imageFile) {
+      alert("Per favore, carica una foto del tuo pacco");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -76,7 +77,8 @@ export default function SendPackage() {
         from: data.from,
         to: data.to,
         deadline: data.deadline,
-        size: data.size,
+        description: data.description,
+        dimensions: data.dimensions || "",
         price: data.price,
         createdAt: new Date().toISOString(),
       });
@@ -177,80 +179,29 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-4">
-            <Label className="block text-neutral-700 font-medium mb-2">Dimensione del pacco</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleSizeSelect("small")}
-                className={`${
-                  selectedSize === "small"
-                    ? "bg-primary text-white"
-                    : "bg-neutral-100 text-neutral-700"
-                } font-medium rounded-lg py-3 flex flex-col items-center border border-neutral-300`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17A3 3 0 015 5zm4 1V5a1 1 0 10-2 0v1H5a1 1 0 100 2h2v1a3 3 0 006 0V8h2a1 1 0 100-2h-2V5a1 1 0 10-2 0v1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Piccolo
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSizeSelect("medium")}
-                className={`${
-                  selectedSize === "medium"
-                    ? "bg-primary text-white"
-                    : "bg-neutral-100 text-neutral-700"
-                } font-medium rounded-lg py-3 flex flex-col items-center border border-neutral-300`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17A3 3 0 015 5zm4 1V5a1 1 0 10-2 0v1H5a1 1 0 100 2h2v1a3 3 0 006 0V8h2a1 1 0 100-2h-2V5a1 1 0 10-2 0v1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Medio
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSizeSelect("large")}
-                className={`${
-                  selectedSize === "large"
-                    ? "bg-primary text-white"
-                    : "bg-neutral-100 text-neutral-700"
-                } font-medium rounded-lg py-3 flex flex-col items-center border border-neutral-300`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-7 w-7"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17A3 3 0 015 5zm4 1V5a1 1 0 10-2 0v1H5a1 1 0 100 2h2v1a3 3 0 006 0V8h2a1 1 0 100-2h-2V5a1 1 0 10-2 0v1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Grande
-              </button>
-            </div>
-            {errors.size && (
-              <p className="text-red-500 text-sm mt-1">{errors.size.message}</p>
+            <Label htmlFor="description" className="block text-neutral-700 font-medium mb-2">Descrizione del pacco</Label>
+            <textarea
+              id="description"
+              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto resize-none"
+              placeholder="es. Scarpe da ginnastica in scatola, leggere, non fragili"
+              rows={3}
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+            )}
+          </div>
+          
+          <div className="mb-4">
+            <Label htmlFor="dimensions" className="block text-neutral-700 font-medium mb-2">Misure (cm) - opzionale</Label>
+            <Input
+              id="dimensions"
+              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
+              placeholder="es. 40 x 30 x 20 cm"
+              {...register("dimensions")}
+            />
+            {errors.dimensions && (
+              <p className="text-red-500 text-sm mt-1">{errors.dimensions.message}</p>
             )}
           </div>
 
@@ -269,7 +220,7 @@ export default function SendPackage() {
           </div>
 
           <div className="mb-6">
-            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (opzionale)</Label>
+            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (obbligatorio)</Label>
             <label 
               htmlFor="image"
               className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center block cursor-pointer"
@@ -292,7 +243,8 @@ export default function SendPackage() {
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <p className="text-neutral-500">Tocca per caricare</p>
+                  <p className="text-neutral-500">Tocca per caricare una foto del tuo pacco</p>
+                  <p className="text-xs text-neutral-400">Aiuta i viaggiatori a capire cosa trasporteranno</p>
                 </>
               )}
               <input
