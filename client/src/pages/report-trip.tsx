@@ -104,12 +104,12 @@ export default function ReportTrip() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
-            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">From</Label>
+            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
             <div className="relative">
               <Input
                 id="from"
                 className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-                placeholder="e.g. Rome"
+                placeholder="es. Roma"
                 {...register("from")}
               />
               <button type="button" className="absolute right-3 top-3">
@@ -133,11 +133,11 @@ export default function ReportTrip() {
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">To</Label>
+            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
             <Input
               id="to"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="e.g. Sfax"
+              placeholder="es. Sfax"
               {...register("to")}
             />
             {errors.to && (
@@ -146,7 +146,7 @@ export default function ReportTrip() {
           </div>
 
           <div className="mb-4">
-            <Label htmlFor="date" className="block text-neutral-700 font-medium mb-2">Travel date</Label>
+            <Label htmlFor="date" className="block text-neutral-700 font-medium mb-2">Data di viaggio</Label>
             <Input
               id="date"
               type="date"
@@ -159,7 +159,7 @@ export default function ReportTrip() {
           </div>
 
           <div className="mb-4">
-            <Label className="block text-neutral-700 font-medium mb-2">Available space</Label>
+            <Label className="block text-neutral-700 font-medium mb-2">Spazio disponibile</Label>
             <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
@@ -170,7 +170,7 @@ export default function ReportTrip() {
                     : "bg-neutral-100 text-neutral-700"
                 } font-medium rounded-lg py-3 border border-neutral-300`}
               >
-                1 package
+                1 pacco
               </button>
               <button
                 type="button"
@@ -181,7 +181,7 @@ export default function ReportTrip() {
                     : "bg-neutral-100 text-neutral-700"
                 } font-medium rounded-lg py-3 border border-neutral-300`}
               >
-                2 packages
+                2 pacchi
               </button>
               <button
                 type="button"
@@ -192,7 +192,7 @@ export default function ReportTrip() {
                     : "bg-neutral-100 text-neutral-700"
                 } font-medium rounded-lg py-3 border border-neutral-300`}
               >
-                3 packages
+                3 pacchi
               </button>
             </div>
             {errors.capacity && (
