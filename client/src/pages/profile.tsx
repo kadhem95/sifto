@@ -83,14 +83,36 @@ export default function Profile() {
           // Controlla se l'errore è dovuto alla mancanza di un indice
           if (reviewError.code === 'failed-precondition' && reviewError.message.includes('index')) {
             console.log("Questo errore è dovuto alla mancanza di un indice in Firestore");
-            toast({
-              title: "Indice Firestore mancante",
-              description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni",
-              variant: "default",
-            });
             
-            // In produzione, potresti voler estrarre l'URL dell'indice dall'errore
-            // e fornirlo all'utente per la creazione con un singolo clic
+            // Estrai l'URL per la creazione dell'indice dal messaggio di errore, se presente
+            const errorMsg = reviewError.message || "";
+            const urlMatch = errorMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/);
+            const indexUrl = urlMatch ? urlMatch[1] : null;
+            
+            // Mostra l'errore completo nella console per facilitare il debugging
+            console.error("Messaggio completo dell'errore:", errorMsg);
+            if (indexUrl) {
+              console.log("URL per creare l'indice:", indexUrl);
+            }
+            
+            // Alert più dettagliato per mostrare il link all'utente
+            // Nota: in una versione di produzione, potresti voler implementare un componente UI dedicato
+            if (indexUrl) {
+              const confirmCreate = window.confirm(
+                "È necessario creare un indice in Firestore per visualizzare le recensioni. "+
+                "Vuoi aprire il link per crearlo ora? (Dopo aver creato l'indice, ricarica la pagina)"
+              );
+              if (confirmCreate) {
+                window.open(indexUrl, '_blank');
+              }
+            } else {
+              // Fallback se l'URL non viene trovato
+              toast({
+                title: "Indice Firestore mancante",
+                description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni. Controlla la console per i dettagli.",
+                variant: "default",
+              });
+            }
           }
           
           // Imposta recensioni vuote in caso di errore
@@ -244,7 +266,7 @@ export default function Profile() {
     }
   };
 
-  // Funzione per gestire l'upload dell'immagine del profilo
+  // Funzione semplificata per gestire l'upload dell'immagine del profilo
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
@@ -262,104 +284,82 @@ export default function Profile() {
       }
       
       // Crea un riferimento allo storage con un nome file unico
-      const fileName = `profile_${currentUser.uid}_${new Date().getTime()}`;
+      const fileName = `profile_${currentUser.uid}_${Date.now()}`;
       const storageRef = ref(storage, `profile_images/${fileName}`);
       
       console.log("Caricamento file su Firebase Storage...");
       
-      // Metodo 1: Utilizzo di uploadBytesResumable per monitorare il progresso
-      const uploadTask = uploadBytes(storageRef, file);
+      // Carica il file con un metodo sincrono standard per massima compatibilità
+      const snapshot = await uploadBytes(storageRef, file);
+      console.log("Upload completato con successo:", snapshot.metadata.name);
       
-      // Usa then invece di await per migliorare la gestione degli errori
-      uploadTask.then(async (snapshot) => {
-        console.log("Upload completato:", snapshot);
-        console.log("Dimensione totale:", snapshot.metadata.size);
-        
-        // Ottieni l'URL di download
-        console.log("Ottenimento URL di download...");
-        try {
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          console.log("URL ottenuto:", downloadURL);
-          
-          if (!downloadURL) {
-            throw new Error("URL di download non valido");
-          }
-          
-          // Creazione di una nuova immagine per verificare l'URL
-          const img = new Image();
-          img.src = downloadURL;
-          
-          // Aggiorna l'URL della foto nel profilo di autenticazione
-          console.log("Aggiornamento profilo autenticazione...");
-          await updateProfile(currentUser, {
-            photoURL: downloadURL
-          });
-          
-          // Aggiorna anche nel database Firestore
-          console.log("Aggiornamento database Firestore...");
-          const userQuery = query(
-            collection(db, "users"),
-            where("uid", "==", currentUser.uid)
-          );
-          const userSnapshot = await getDocs(userQuery);
-          
-          if (!userSnapshot.empty) {
-            // Aggiorna il documento esistente
-            const userDoc = userSnapshot.docs[0];
-            await updateDoc(doc(db, "users", userDoc.id), {
-              photoURL: downloadURL
-            });
-            console.log("Documento Firestore aggiornato");
-          } else {
-            // Se l'utente non esiste nel database, crealo
-            const newUserDoc = await addDoc(collection(db, "users"), {
-              uid: currentUser.uid,
-              displayName: currentUser.displayName || "",
-              photoURL: downloadURL,
-              createdAt: new Date().toISOString(),
-              rating: 0,
-              reviewCount: 0
-            });
-            console.log("Nuovo documento Firestore creato:", newUserDoc.id);
-          }
-          
-          // Aggiorna lo stato locale con il nuovo URL
-          // Questo evita di dover ricaricare la pagina
-          const profileImage = document.querySelector('.avatar-image') as HTMLImageElement;
-          if (profileImage) {
-            profileImage.src = downloadURL;
-            console.log("Immagine profilo aggiornata nel DOM");
-          }
-          
-          // Mostra un messaggio di conferma
-          toast({
-            title: "Immagine caricata",
-            description: "La tua immagine del profilo è stata aggiornata",
-            variant: "default"
-          });
-          
-        } catch (urlError) {
-          console.error("Errore nel recupero dell'URL:", urlError);
-          throw urlError;
-        }
-      }).catch((error) => {
-        console.error("Errore durante l'upload:", error);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un problema durante il caricamento dell'immagine",
-          variant: "destructive"
+      // Ottieni l'URL di download
+      console.log("Ottenimento URL di download...");
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log("URL ottenuto:", downloadURL);
+      
+      // Verifica che l'URL sia valido
+      if (!downloadURL) {
+        throw new Error("URL di download non valido");
+      }
+      
+      // Aggiorna l'URL della foto nel profilo di autenticazione
+      console.log("Aggiornamento profilo autenticazione...");
+      await updateProfile(currentUser, {
+        photoURL: downloadURL
+      });
+      
+      // Aggiorna anche nel database Firestore
+      console.log("Aggiornamento database Firestore...");
+      const userQuery = query(
+        collection(db, "users"),
+        where("uid", "==", currentUser.uid)
+      );
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        // Aggiorna il documento esistente
+        const userDoc = userSnapshot.docs[0];
+        await updateDoc(doc(db, "users", userDoc.id), {
+          photoURL: downloadURL
         });
-      }).finally(() => {
-        setIsUploadingImage(false);
+        console.log("Documento Firestore aggiornato");
+      } else {
+        // Se l'utente non esiste nel database, crealo
+        const newUserDoc = await addDoc(collection(db, "users"), {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || "",
+          photoURL: downloadURL,
+          createdAt: new Date().toISOString(),
+          rating: 0,
+          reviewCount: 0
+        });
+        console.log("Nuovo documento Firestore creato:", newUserDoc.id);
+      }
+      
+      // Aggiorna manualmente l'immagine nell'interfaccia utente
+      const avatarImage = document.querySelector('.avatar-image') as HTMLImageElement;
+      if (avatarImage) {
+        // Imposta un timestamp casuale per evitare il caching
+        avatarImage.src = `${downloadURL}?t=${Date.now()}`;
+        console.log("Immagine profilo aggiornata nell'interfaccia");
+      }
+      
+      // Mostra un messaggio di conferma
+      toast({
+        title: "Immagine caricata",
+        description: "La tua immagine del profilo è stata aggiornata con successo",
+        variant: "default"
       });
       
     } catch (error: any) {
-      console.error("Error preparing upload:", error);
+      console.error("Errore durante il caricamento dell'immagine:", error);
       toast({
         title: "Errore",
-        description: error.message || "Si è verificato un problema durante la preparazione del caricamento",
+        description: error.message || "Si è verificato un problema durante il caricamento dell'immagine",
         variant: "destructive"
       });
+    } finally {
       setIsUploadingImage(false);
     }
   };
