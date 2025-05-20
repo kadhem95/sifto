@@ -84,10 +84,6 @@ export default function Profile() {
           if (reviewError.code === 'failed-precondition' && reviewError.message.includes('index')) {
             console.log("Questo errore è dovuto alla mancanza di un indice in Firestore");
             
-            // Creiamo un componente per mostrare l'errore di indice mancante
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'firestore-index-error p-4 mb-4 border border-orange-200 bg-orange-50 rounded-lg';
-            
             // Estrai l'URL per la creazione dell'indice dal messaggio di errore
             const errorMsg = reviewError.message || "";
             const urlMatch = errorMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/);
@@ -98,36 +94,15 @@ export default function Profile() {
             if (indexUrl) {
               console.log("URL per creare l'indice:", indexUrl);
               
-              // Creiamo il contenuto del messaggio di errore
-              errorDiv.innerHTML = `
-                <h3 class="text-lg font-semibold text-orange-800 mb-2">Indice Firestore necessario</h3>
-                <p class="mb-3 text-orange-700">Per visualizzare le recensioni, è necessario creare un indice in Firestore.</p>
-                <a href="${indexUrl}" target="_blank" rel="noopener noreferrer" 
-                   class="inline-block px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors">
-                  Crea indice in Firestore
-                </a>
-                <p class="mt-2 text-sm text-orange-600">Dopo aver creato l'indice, ricarica questa pagina.</p>
-              `;
+              // Imposta l'URL dell'indice nello stato per mostrare il banner
+              setFirestoreIndexUrl(indexUrl);
               
-              // Inseriamo il messaggio nella pagina
-              const reviewsContainer = document.querySelector('.reviews-container');
-              if (reviewsContainer) {
-                // Se è già presente un messaggio di errore, lo rimuoviamo
-                const existingError = reviewsContainer.querySelector('.firestore-index-error');
-                if (existingError) {
-                  existingError.remove();
-                }
-                
-                // Inseriamo il nuovo messaggio di errore
-                reviewsContainer.prepend(errorDiv);
-              } else {
-                // Se non troviamo il container delle recensioni, mostriamo un avviso standard
-                toast({
-                  title: "Indice Firestore mancante",
-                  description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni.",
-                  variant: "default",
-                });
-              }
+              // Mostra anche un toast per maggiore visibilità
+              toast({
+                title: "Indice Firestore necessario",
+                description: "Per visualizzare le recensioni, è necessario creare un indice composito in Firestore.",
+                variant: "default",
+              });
             } else {
               // Fallback se l'URL non viene trovato
               toast({
@@ -441,9 +416,50 @@ export default function Profile() {
     }
   };
 
+  // Stato per gestire l'URL dell'indice Firestore
+  const [firestoreIndexUrl, setFirestoreIndexUrl] = useState<string | null>(null);
+
   return (
     <AppLayout>
       <div className="p-6">
+        {/* Banner per l'indice Firestore mancante */}
+        {firestoreIndexUrl && (
+          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6 rounded-md shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-lg font-semibold text-orange-800">Indice Firestore necessario</h3>
+                <p className="text-orange-700 mb-2">
+                  Per visualizzare le recensioni è necessario creare un indice composito in Firestore.
+                </p>
+                <a 
+                  href={firestoreIndexUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                >
+                  Crea indice in Firestore
+                </a>
+                <p className="text-sm text-orange-600 mt-2">
+                  Dopo aver creato l'indice, ricarica questa pagina.
+                </p>
+              </div>
+              <button 
+                onClick={() => setFirestoreIndexUrl(null)} 
+                className="flex-shrink-0 ml-2 text-orange-500 hover:text-orange-700"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+      
         <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profilo</h1>
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
