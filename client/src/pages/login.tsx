@@ -62,35 +62,27 @@ export default function Login() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            {/* Elemento principale - forme che rappresentano persone/pacchi in movimento */}
-            <path 
-              d="M4 14l4-8 3 5" 
-              fill="none" 
-              strokeWidth="2" 
-            />
-            <path 
-              d="M16 14l-4-8-3 5" 
-              fill="none" 
-              strokeWidth="2" 
-            />
+            {/* Elemento centrale - pacco */}
+            <rect x="8" y="10" width="8" height="8" rx="1" strokeWidth="2" />
             
-            {/* Elemento di connessione - linea curva che connette */}
-            <path 
-              d="M4 14c0 0 4 3 8 0c4 -3 8 0 8 0" 
-              fill="none" 
-              strokeWidth="2" 
-            />
+            {/* Elemento di movimento - freccia circolare */}
+            <path d="M16 8C17.5 9.5 18 11.5 17 14" strokeWidth="2" />
+            <path d="M8 8C6.5 9.5 6 11.5 7 14" strokeWidth="2" />
             
-            {/* Pacco/valigia simbolico */}
-            <rect x="9" y="15" width="6" height="4" rx="1" fill="white" />
+            {/* Elementi di connessione - punti che rappresentano persone */}
+            <circle cx="4" cy="7" r="1.5" fill="white" />
+            <circle cx="20" cy="7" r="1.5" fill="white" />
             
-            {/* Elementi di movimento - frecce stilizzate */}
-            <path d="M7 18l-2 2M17 18l2 2" strokeWidth="1.5" />
+            {/* Elemento di movimento - linea di viaggio */}
+            <path d="M4 7C8 3 16 3 20 7" strokeWidth="1.5" strokeDasharray="1,1" />
+            
+            {/* Indicatore di direzione */}
+            <path d="M12 5v-2M12 3l-1.5 1.5M12 3l1.5 1.5" strokeWidth="1.5" />
           </svg>
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
         <p className="text-neutral-600 text-center font-medium mb-8">
-          connette chi deve spedire con chi sta per viaggiare
+          Il tuo pacco trova un passaggio
         </p>
 
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 border border-accent">
