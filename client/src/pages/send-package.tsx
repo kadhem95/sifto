@@ -33,7 +33,6 @@ export default function SendPackage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -125,6 +124,7 @@ export default function SendPackage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Località di partenza */}
           <div className="mb-4">
             <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
             <div className="relative">
@@ -154,6 +154,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Località di destinazione */}
           <div className="mb-4">
             <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
             <Input
@@ -167,6 +168,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Data di consegna */}
           <div className="mb-4">
             <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">Entro quando</Label>
             <Input
@@ -180,6 +182,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Descrizione */}
           <div className="mb-4">
             <Label htmlFor="description" className="block text-neutral-700 font-medium mb-2">Descrizione del pacco</Label>
             <textarea
@@ -194,6 +197,7 @@ export default function SendPackage() {
             )}
           </div>
           
+          {/* Misure */}
           <div className="mb-4">
             <Label className="block text-neutral-700 font-medium mb-2">Misure</Label>
             <div className="grid grid-cols-3 gap-3">
@@ -234,21 +238,8 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Foto del pacco */}
           <div className="mb-4">
-            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
-            <Input
-              id="price"
-              type="number"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="es. 20"
-              {...register("price")}
-            />
-            {errors.price && (
-              <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
-            )}
-          </div>
-
-          <div className="mb-6">
             <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (facoltativo)</Label>
             <label 
               htmlFor="image"
@@ -286,6 +277,22 @@ export default function SendPackage() {
             </label>
           </div>
 
+          {/* Offerta */}
+          <div className="mb-6">
+            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
+            <Input
+              id="price"
+              type="number"
+              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
+              placeholder="es. 20"
+              {...register("price")}
+            />
+            {errors.price && (
+              <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+            )}
+          </div>
+
+          {/* Pulsante pubblica */}
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-blue-400 text-white font-medium rounded-lg py-4 mb-4 h-auto transition-all duration-200 active:scale-[0.98] active:opacity-90"
