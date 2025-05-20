@@ -90,7 +90,7 @@ export default function Login() {
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
         <p className="text-neutral-600 text-center font-medium mb-8">
-          SIFTO connette chi deve spedire con chi sta per viaggiare
+          connette chi deve spedire con chi sta per viaggiare
         </p>
 
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 border border-accent">
