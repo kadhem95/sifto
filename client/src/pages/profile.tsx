@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, UserCircle, Upload } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc } from "firebase/firestore";
 import { db, uploadProfileImage } from "@/lib/firebase";
 
 export default function Profile() {
@@ -277,20 +277,52 @@ export default function Profile() {
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-6 flex flex-col items-center">
-            <Avatar className="w-24 h-24 mb-4">
-              <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
-              <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
-            </Avatar>
+            {/* Avatar con overlay per il caricamento dell'immagine */}
+            <div className="relative">
+              <Avatar className="w-24 h-24 mb-4">
+                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+                <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+              </Avatar>
+              
+              {/* Bottone per il caricamento dell'immagine */}
+              <button 
+                className="absolute bottom-4 right-0 bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors"
+                onClick={handleImageButtonClick}
+                disabled={isUploadingImage}
+                title="Cambia immagine profilo"
+              >
+                {isUploadingImage ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Camera size={16} />
+                )}
+              </button>
+              
+              {/* Input file nascosto */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
             
             {isEditing ? (
               <div className="w-full max-w-xs mb-4">
+                <label htmlFor="profile-name" className="block text-sm text-neutral-500 mb-1 text-center">
+                  Il tuo nome
+                </label>
                 <input
+                  id="profile-name"
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="w-full bg-neutral-100 rounded-lg px-4 py-2 border border-neutral-300 text-center mb-2"
+                  className="w-full bg-neutral-100 rounded-lg px-4 py-2 border border-neutral-300 text-center mb-3"
+                  placeholder="Inserisci il tuo nome"
+                  maxLength={50}
                 />
-                <div className="flex justify-center space-x-2">
+                <div className="flex justify-center space-x-3">
                   <Button
                     onClick={() => setIsEditing(false)}
                     variant="outline"
@@ -302,16 +334,23 @@ export default function Profile() {
                   <Button
                     onClick={handleUpdateProfile}
                     className="px-4 bg-primary text-white"
-                    disabled={isLoading}
+                    disabled={isLoading || !userName.trim()}
                   >
-                    {isLoading ? "Salvataggio..." : "Salva"}
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Salvataggio...
+                      </div>
+                    ) : (
+                      "Salva"
+                    )}
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <h2 className="text-xl font-semibold text-neutral-900 mb-1">{userName || "User"}</h2>
-                <p className="text-neutral-500 mb-2">{currentUser?.phoneNumber}</p>
+                <h2 className="text-xl font-semibold text-neutral-900 mb-1">{userName || "Utente"}</h2>
+                <p className="text-neutral-500 mb-2">{currentUser?.phoneNumber || currentUser?.email}</p>
                 <div className="flex items-center mb-4">
                   <Rating value={userProfile?.rating || 0} readOnly size="sm" />
                   <span className="text-sm text-neutral-500 ml-1">
@@ -320,9 +359,10 @@ export default function Profile() {
                 </div>
                 <Button
                   onClick={() => setIsEditing(true)}
-                  className="text-neutral-700 bg-neutral-100"
+                  className="text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
                 >
-                  Modifica Profilo
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Modifica Nome
                 </Button>
               </>
             )}
