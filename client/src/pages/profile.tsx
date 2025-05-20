@@ -266,99 +266,124 @@ export default function Profile() {
     }
   };
 
-  // Funzione per gestire l'upload dell'immagine del profilo utilizzando l'utility centralizzata
+  // Funzione semplificata per upload immagine
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
     
-    // Reset dell'input file per consentire la selezione dello stesso file
     event.target.value = "";
-    
     setIsUploadingImage(true);
-    console.log("Inizio upload immagine del profilo...");
     
     try {
-      // Crea un riferimento allo storage con un nome file unico
+      // Verifica dimensione massima (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("L'immagine è troppo grande (max 5MB)");
+      }
+      
+      // Crea una copia locale dell'immagine usando l'object URL
+      const localPreviewUrl = URL.createObjectURL(file);
+      
+      // Aggiorna immediatamente l'interfaccia utente per feedback
+      const avatarImage = document.querySelector('.avatar-image') as HTMLImageElement;
+      if (avatarImage) {
+        avatarImage.src = localPreviewUrl;
+      }
+      
+      // Inizia il caricamento in background
       const fileName = `profile_${currentUser.uid}_${Date.now()}`;
       const storageRef = ref(storage, `profile_images/${fileName}`);
       
-      console.log("Caricamento file su Firebase Storage...");
+      // Carica il file
+      const uploadTask = uploadBytes(storageRef, file);
       
-      // Carica il file con un metodo sincrono standard
-      const snapshot = await uploadBytes(storageRef, file);
-      console.log("Upload completato con successo:", snapshot.metadata.name);
-      
-      // Ottieni l'URL di download
-      console.log("Ottenimento URL di download...");
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log("URL ottenuto:", downloadURL);
-      
-      // Aggiorna l'URL della foto nel profilo di autenticazione
-      console.log("Aggiornamento profilo autenticazione...");
-      await updateProfile(currentUser, {
-        photoURL: downloadURL
-      });
-      
-      // Aggiorna anche nel database Firestore
-      console.log("Aggiornamento database Firestore...");
-      const userQuery = query(
-        collection(db, "users"),
-        where("uid", "==", currentUser.uid)
-      );
-      const userSnapshot = await getDocs(userQuery);
-      
-      if (!userSnapshot.empty) {
-        // Aggiorna il documento esistente
-        const userDoc = userSnapshot.docs[0];
-        await updateDoc(doc(db, "users", userDoc.id), {
-          photoURL: downloadURL
-        });
-        console.log("Documento Firestore aggiornato");
-      } else {
-        // Se l'utente non esiste nel database, crealo
-        await addDoc(collection(db, "users"), {
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || "",
-          email: currentUser.email || "",
-          photoURL: downloadURL,
-          createdAt: new Date().toISOString(),
-          rating: 0,
-          reviewCount: 0
-        });
-        console.log("Nuovo documento Firestore creato");
-      }
-      console.log("Immagine caricata con successo:", downloadURL);
-      
-      // Aggiorna manualmente l'immagine nell'interfaccia utente per un feedback immediato
-      const avatarImage = document.querySelector('.avatar-image') as HTMLImageElement;
-      if (avatarImage) {
-        // Imposta un timestamp casuale per evitare il caching
-        avatarImage.src = `${downloadURL}?t=${Date.now()}`;
-        console.log("Immagine profilo aggiornata nell'interfaccia");
-      }
-      
-      // Forza un refresh dell'avatar per prevenire problemi di cache
-      setTimeout(() => {
-        if (avatarImage && currentUser.photoURL) {
-          avatarImage.src = `${currentUser.photoURL}?t=${Date.now()}`;
-        }
-      }, 500);
-      
-      // Mostra un messaggio di conferma
+      // Prima mostra un messaggio che l'upload è iniziato
       toast({
-        title: "Immagine caricata",
-        description: "La tua immagine del profilo è stata aggiornata con successo",
+        title: "Caricamento in corso",
+        description: "Stiamo caricando la tua immagine...",
         variant: "default"
       });
       
+      // Gestisci il risultato del caricamento
+      uploadTask.then(async (snapshot) => {
+        try {
+          // Ottieni URL e aggiorna profilo
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          
+          // Aggiorna profilo autenticazione
+          await updateProfile(currentUser, { photoURL: downloadURL });
+          
+          // Aggiorna database Firestore
+          try {
+            const userQuery = query(
+              collection(db, "users"),
+              where("uid", "==", currentUser.uid)
+            );
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              await updateDoc(doc(db, "users", userDoc.id), {
+                photoURL: downloadURL
+              });
+            } else {
+              await addDoc(collection(db, "users"), {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName || "",
+                email: currentUser.email || "",
+                photoURL: downloadURL,
+                createdAt: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0
+              });
+            }
+          } catch (firestoreError) {
+            console.error("Errore Firestore:", firestoreError);
+            // Non far fallire l'operazione se Firestore fallisce
+          }
+          
+          // Conferma successo
+          toast({
+            title: "Immagine caricata",
+            description: "La tua immagine del profilo è stata aggiornata",
+            variant: "default"
+          });
+        } catch (error) {
+          console.error("Errore nel processo post-upload:", error);
+          toast({
+            title: "Errore",
+            description: "Problema nell'aggiornamento del profilo",
+            variant: "destructive"
+          });
+        } finally {
+          // Rilascia la memoria dell'object URL
+          URL.revokeObjectURL(localPreviewUrl);
+          setIsUploadingImage(false);
+        }
+      }).catch((error) => {
+        console.error("Errore caricamento:", error);
+        toast({
+          title: "Errore caricamento",
+          description: "Non è stato possibile caricare l'immagine",
+          variant: "destructive"
+        });
+        setIsUploadingImage(false);
+        
+        // Ripristina immagine precedente
+        if (avatarImage && currentUser.photoURL) {
+          avatarImage.src = currentUser.photoURL;
+        }
+        
+        // Rilascia la memoria dell'object URL
+        URL.revokeObjectURL(localPreviewUrl);
+      });
     } catch (error: any) {
-      console.error("Errore durante il caricamento dell'immagine:", error);
+      // Gestisce errori nelle verifiche iniziali
+      console.error("Errore preparazione:", error);
       toast({
         title: "Errore",
-        description: error.message || "Si è verificato un problema durante il caricamento dell'immagine",
+        description: error.message || "Si è verificato un problema con l'immagine",
         variant: "destructive"
       });
-    } finally {
       setIsUploadingImage(false);
     }
   };
