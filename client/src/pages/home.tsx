@@ -59,7 +59,7 @@ export default function Home() {
           </div>
 
           {/* Travel Card */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+          <div className="bg-[#F2F7FC] rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1499591934245-40b55745b905?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
               alt="Person traveling with luggage"
@@ -67,14 +67,14 @@ export default function Home() {
             />
             <div className="p-5">
               <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                Segnala un Viaggio
+                Aggiungi un viaggio
               </h2>
               <p className="text-neutral-500 mb-4">
-                Raccontaci del tuo prossimo viaggio e guadagna consegnando pacchi
+                Guadagna portando pacchi lungo il tragitto.
               </p>
               <Button
                 onClick={handleReportTrip}
-                className="w-full bg-secondary text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
+                className="w-full bg-[#3DD598] text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +88,7 @@ export default function Home() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Segnala un Viaggio
+                Aggiungi un viaggio
               </Button>
             </div>
           </div>
