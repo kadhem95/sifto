@@ -51,31 +51,30 @@ export default function Login() {
   return (
     <div className="h-full flex flex-col justify-between p-6 min-h-screen bg-gradient-to-b from-accent to-background">
       <div className="flex flex-col items-center justify-center mt-8">
-        <div className="w-28 h-28 bg-gradient-to-br from-primary to-secondary rounded-2xl shadow-lg flex items-center justify-center mb-6 overflow-hidden">
+        <div className="w-28 h-28 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-6 overflow-hidden">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-20 w-20 text-white"
+            className="h-20 w-20"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
           >
-            {/* La S fluida che rappresenta strada/tragitto */}
+            {/* S stilizzata che richiama un tragitto/strada curva - ancora più minimale */}
             <path 
-              d="M7 8C7 6 9 6 12 6C15 6 17 8 17 10C17 13 9 13 9 16C9 18 11 18 14 18C17 18 17 16 17 16" 
-              stroke="white"
+              d="M8 9C8 7 10 5 13 5C16 5 17 7 17 9C17 11 14 12 12 13C10 14 7 15 7 17C7 19 9 21 12 21C15 21 16 19 16 17" 
+              stroke="url(#gradient)"
               fill="none"
-              strokeWidth="3"
+              strokeWidth="3.5"
               strokeLinecap="round"
+              strokeLinejoin="round"
             />
             
-            {/* Piccolo pacco stilizzato lungo il percorso */}
-            <rect x="8" y="11.5" width="3" height="3" rx="0.5" fill="white" stroke="none" />
-            
-            {/* Indicatore di direzione */}
-            <path d="M17 16l-1.5 -1.5M17 16l-1.5 1.5" stroke="white" strokeWidth="1.5" />
+            {/* Definizione del gradiente blu-azzurro */}
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0077B6" />
+                <stop offset="100%" stopColor="#00B4D8" />
+              </linearGradient>
+            </defs>
           </svg>
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
