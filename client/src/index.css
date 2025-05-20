@@ -2,85 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* JIBLI - Brand Colors */
 :root {
-  /* Verde menta (primario) */
-  --color-primary: #4AD8B7;
-  /* Blu notte (secondario) */
-  --color-secondary: #253b6b;
-  /* Verde menta chiaro (accent) */
-  --color-accent: #E9FFF9;
-}
-
-/* Custom JIBLI styling */
-.jibli-logo {
-  font-weight: 700;
-  font-size: 1.75rem;
-  letter-spacing: 0.05em;
-  color: var(--color-primary);
-}
-
-.jibli-heading {
-  font-weight: 600;
-  color: var(--color-secondary);
-}
-
-.jibli-button-primary {
-  background-color: var(--color-primary);
-  color: white;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-}
-
-.jibli-button-primary:hover {
-  background-color: #3fc3a5;
-}
-
-.jibli-button-secondary {
-  background-color: var(--color-secondary);
-  color: white;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-}
-
-.jibli-button-secondary:hover {
-  background-color: #314c84;
-}
-
-/* Customized avatar for JIBLI branding */
-.jibli-avatar {
-  border: 3px solid var(--color-primary);
-}
-
-:root {
-  /* JIBLI Color Scheme - Verde menta, bianco, blu notte */
-  --background: 0 0% 100%;
-  --foreground: 220 20% 20%;
-  --muted: 158 10% 95%;
-  --muted-foreground: 220 10% 50%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 20%;
-  --card: 0 0% 100%;
-  --card-foreground: 220 20% 20%;
-  --border: 158 10% 90%;
-  --input: 158 10% 95%;
-  /* Verde menta (primario) */
-  --primary: 158 53% 50%;
-  --primary-foreground: 0 0% 100%;
-  /* Blu notte (secondario) */
-  --secondary: 222 47% 28%;
-  --secondary-foreground: 0 0% 100%;
-  /* Verde menta chiaro (accent) */
-  --accent: 158 53% 95%;
-  --accent-foreground: 158 53% 30%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
-  --ring: 158 53% 50%;
-  --radius: 0.8rem; /* Bordi più arrotondati per un aspetto più amichevole */
+      --background: 0 0% 100%;
+--foreground: 20 14.3% 4.1%;
+--muted: 60 4.8% 95.9%;
+--muted-foreground: 25 5.3% 44.7%;
+--popover: 0 0% 100%;
+--popover-foreground: 20 14.3% 4.1%;
+--card: 0 0% 100%;
+--card-foreground: 20 14.3% 4.1%;
+--border: 20 5.9% 90%;
+--input: 20 5.9% 90%;
+--primary: 207 90% 54%;
+--primary-foreground: 211 100% 99%;
+--secondary: 60 4.8% 95.9%;
+--secondary-foreground: 24 9.8% 10%;
+--accent: 60 4.8% 95.9%;
+--accent-foreground: 24 9.8% 10%;
+--destructive: 0 84.2% 60.2%;
+--destructive-foreground: 60 9.1% 97.8%;
+--ring: 20 14.3% 4.1%;
+--radius: 0.5rem;
   }
   .dark {
       --background: 240 10% 3.9%;

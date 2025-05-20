@@ -244,8 +244,8 @@ export default function Chat() {
       <AppLayout hideNavigation>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-[#4AD8B7] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#253b6b]">Caricamento conversazione...</p>
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-neutral-500">Loading conversation...</p>
           </div>
         </div>
       </AppLayout>
@@ -255,15 +255,11 @@ export default function Chat() {
   return (
     <AppLayout hideNavigation>
       <div className="h-full flex flex-col">
-        {/* Header della chat con colori JIBLI */}
-        <div className="flex items-center p-4 border-b border-[#4AD8B7]/20 bg-white shadow-sm">
-          <button 
-            className="p-2 rounded-full hover:bg-[#E9FFF9] transition-colors" 
-            onClick={goBackToList}
-          >
+        <div className="flex items-center p-4 border-b border-neutral-200 bg-white">
+          <button className="p-2" onClick={goBackToList}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-[#253b6b]"
+              className="h-6 w-6 text-neutral-900"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -278,23 +274,22 @@ export default function Chat() {
           </button>
           {participant && (
             <div className="flex items-center ml-2">
-              <Avatar className="w-12 h-12 border-2 border-[#4AD8B7]">
+              <Avatar className="w-10 h-10">
                 <AvatarImage src={participant.photoURL} alt={participant.name} />
-                <AvatarFallback className="bg-[#E9FFF9] text-[#253b6b] font-bold">{participant.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="ml-3">
-                <h3 className="text-[#253b6b] font-semibold text-lg">{participant.name}</h3>
+                <h3 className="text-neutral-900 font-medium">{participant.name}</h3>
                 <div className="flex items-center">
-                  <span className="w-2 h-2 bg-[#4AD8B7] rounded-full mr-1"></span>
-                  <span className="text-xs text-[#253b6b]/70">Disponibile</span>
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                  <span className="text-xs text-neutral-500">Online</span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Area messaggi con stile JIBLI */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-white to-[#f0fcf9]">
+        <div className="flex-1 overflow-y-auto p-4 bg-neutral-100">
           {messages.map((message) => (
             <MessageItem
               key={message.id}
@@ -308,51 +303,36 @@ export default function Chat() {
           ))}
           
           {messages.length === 0 && (
-            <div className="text-center py-10 flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-[#E9FFF9] flex items-center justify-center mb-4">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-8 w-8 text-[#4AD8B7]" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <p className="text-[#253b6b] font-medium">Non ci sono ancora messaggi.</p>
-              <p className="text-[#253b6b]/70 mt-1">Inizia la conversazione con un saluto!</p>
-              <p className="text-sm italic text-[#253b6b]/60 mt-4">"Ogni viaggio può aiutare qualcuno"</p>
+            <div className="text-center py-6 text-neutral-500">
+              <p>No messages yet. Start the conversation!</p>
             </div>
           )}
           
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick actions area */}
         <QuickActions
           onMeetingPoint={handleSetMeetingPoint}
           onConfirmPrice={handleConfirmPrice}
           onDeliveryComplete={handleDeliveryComplete}
         />
         
-        {/* Input area con stile JIBLI */}
-        <div className="p-3 border-t border-[#4AD8B7]/20 bg-white flex items-center">
+        <div className="p-3 border-t border-neutral-200 bg-white flex items-center">
           <Input
-            className="flex-1 bg-[#E9FFF9]/50 border-[#4AD8B7]/30 focus:border-[#4AD8B7] rounded-xl px-4 py-3 mx-2 h-auto placeholder:text-[#253b6b]/50"
-            placeholder="Scrivi un messaggio..."
+            className="flex-1 bg-neutral-100 rounded-lg px-4 py-3 mx-2 h-auto"
+            placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
           />
           <Button
             onClick={handleSendMessage}
-            className="p-2 text-white bg-[#4AD8B7] hover:bg-[#3fc3a5] rounded-full h-12 w-12 flex items-center justify-center shadow-sm transition-colors"
+            className="p-2 text-white bg-primary rounded-full h-10 w-10 flex items-center justify-center"
             disabled={!newMessage.trim()}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

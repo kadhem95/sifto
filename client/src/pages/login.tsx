@@ -49,13 +49,12 @@ export default function Login() {
   };
 
   return (
-    <div className="h-full flex flex-col justify-between p-6 min-h-screen bg-gradient-to-b from-white to-[#f0fcf9]">
+    <div className="h-full flex flex-col justify-between p-6 min-h-screen">
       <div className="flex flex-col items-center justify-center mt-8">
-        {/* Logo e titolo JIBLI */}
-        <div className="w-28 h-28 rounded-full bg-[#4AD8B7] border-4 border-white shadow-xl flex items-center justify-center mb-6">
+        <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-16 w-16 text-white"
+            className="h-14 w-14 text-white"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -63,25 +62,20 @@ export default function Login() {
             <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1V6a2 2 0 012-2h1.38l-1.73-1.73A1 1 0 0112.22 1h2.07a1 1 0 01.7.29l2.71 2.71a1 1 0 01.29.7 2 2 0 01-2 2H15v8a1 1 0 01-1 1h-.05a2.5 2.5 0 01-4.9 0H3z" />
           </svg>
         </div>
-        <h1 className="jibli-logo text-4xl mb-2">JIBLI</h1>
-        <p className="text-[#253b6b] text-center mb-2 font-medium">
-          Connette persone tra Europa e Maghreb
-        </p>
-        <p className="text-gray-500 text-center text-sm mb-8 italic">
-          "Ogni viaggio è un favore che torna"
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">PackShare</h1>
+        <p className="text-neutral-500 text-center mb-8">
+          Connette spedizionieri con viaggiatori
         </p>
 
-        <div className="w-full max-w-md bg-white rounded-xl p-6 shadow-md border border-gray-100">
-          <h2 className="text-2xl font-bold text-[#253b6b] mb-6 text-center">
-            {isRegister ? "Benvenuto nella famiglia!" : "Bentornato fratello!"}
+        <div className="w-full max-w-md">
+          <h2 className="text-xl font-bold text-neutral-900 mb-4">
+            {isRegister ? "Registrati" : "Accedi"}
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div className="space-y-2">
-                <Label htmlFor="displayName" className="text-[#253b6b] font-medium">
-                  Come ti chiamano gli amici?
-                </Label>
+                <Label htmlFor="displayName">Nome utente</Label>
                 <Input
                   id="displayName"
                   type="text"
@@ -89,13 +83,12 @@ export default function Login() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required={isRegister}
-                  className="border-[#4AD8B7]/30 focus:border-[#4AD8B7] focus:ring-[#4AD8B7]/20"
                 />
               </div>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#253b6b] font-medium">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -103,21 +96,19 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-[#4AD8B7]/30 focus:border-[#4AD8B7] focus:ring-[#4AD8B7]/20"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[#253b6b] font-medium">Password</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="La tua password (minimo 6 caratteri)"
+                placeholder="La tua password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="border-[#4AD8B7]/30 focus:border-[#4AD8B7] focus:ring-[#4AD8B7]/20"
               />
             </div>
             
@@ -129,29 +120,24 @@ export default function Login() {
             
             <Button 
               type="submit" 
-              className={isRegister ? "jibli-button-primary w-full py-3" : "jibli-button-secondary w-full py-3"}
+              className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? "Caricamento..." : isRegister ? "Unisciti a JIBLI" : "Accedi a JIBLI"}
+              {isLoading ? "Caricamento..." : isRegister ? "Registrati" : "Accedi"}
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <button 
               type="button"
               onClick={toggleMode}
-              className="text-[#4AD8B7] hover:text-[#3fc3a5] font-medium"
+              className="text-primary hover:underline"
             >
               {isRegister 
-                ? "Sei già dei nostri? Accedi" 
-                : "Prima volta qui? Registrati"}
+                ? "Hai già un account? Accedi" 
+                : "Non hai un account? Registrati"}
             </button>
           </div>
-        </div>
-        
-        {/* Disclaimer */}
-        <div className="mt-8 text-center text-xs text-gray-500 max-w-sm">
-          <p>JIBLI non controlla i pacchi. Fidati di chi viaggia, valuta e scegli con intelligenza.</p>
         </div>
       </div>
     </div>

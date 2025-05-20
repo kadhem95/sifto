@@ -37,11 +37,7 @@ export default function Profile() {
       return;
     }
 
-    // Carica il nome utente dal localStorage (se disponibile) o dal profilo utente
-    const savedName = localStorage.getItem('jibli_user_name');
-    if (savedName) {
-      setUserName(savedName);
-    } else if (userProfile) {
+    if (userProfile) {
       setUserName(userProfile.displayName || "");
     }
 
@@ -142,8 +138,7 @@ export default function Profile() {
     fetchData();
   }, [currentUser, navigate, userProfile]);
 
-  // Usiamo localStorage come soluzione alternativa per salvare i dati del profilo
-  const handleUpdateProfile = () => {
+  const handleUpdateProfile = async () => {
     if (!currentUser) {
       toast({
         title: "Errore",
@@ -157,9 +152,15 @@ export default function Profile() {
     setIsLoading(true);
     
     try {
-      if (userName.trim()) {
-        // Salviamo il nome utente nel localStorage per dimostrare la funzionalità
-        localStorage.setItem('jibli_user_name', userName.trim());
+      if (userName.trim() && userName !== userProfile?.displayName) {
+        // Prima aggiorniamo il profilo utente in Firebase Auth
+        await updateProfile(currentUser, {
+          displayName: userName.trim()
+        });
+        
+        // Poi aggiorniamo il nome nel database locale
+        // Nota: questo è un approccio semplificato poiché abbiamo problemi di connessione a Firebase
+        // In una versione produttiva, dovremmo anche aggiornare il database Firestore
         
         toast({
           title: "Profilo aggiornato",
@@ -167,24 +168,23 @@ export default function Profile() {
           duration: 3000
         });
         
-        // Aggiorniamo lo stato locale
+        // Attendiamo che l'utente venga aggiornato e forziamo un aggiornamento della pagina
         setTimeout(() => {
-          setIsLoading(false);
-          setIsEditing(false);
-          // Aggiorna la pagina per mostrare le modifiche
           window.location.reload();
-        }, 1000);
+        }, 1500);
       }
+      
+      setIsEditing(false);
     } catch (error) {
       console.error("Errore nell'aggiornamento del profilo:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'aggiornamento del profilo.",
+        description: "Si è verificato un errore durante l'aggiornamento del profilo. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
+    } finally {
       setIsLoading(false);
-      setIsEditing(false);
     }
   };
   
@@ -193,18 +193,18 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire l'upload dell'immagine usando localStorage
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Funzione per gestire l'upload dell'immagine
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !currentUser) return;
     
     const file = files[0];
     
-    // Controllo delle dimensioni (max 2MB per localStorage)
-    if (file.size > 2 * 1024 * 1024) {
+    // Controllo delle dimensioni (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File troppo grande",
-        description: "L'immagine non deve superare i 2MB.",
+        description: "L'immagine non deve superare i 5MB.",
         variant: "destructive",
         duration: 3000
       });
@@ -225,54 +225,43 @@ export default function Profile() {
     setIsUploadingImage(true);
     
     try {
-      const reader = new FileReader();
+      // Metodo più semplice: aggiorna direttamente il profilo Firebase Auth
+      // Creiamo un URL temporaneo per l'immagine caricata
+      const imageUrl = URL.createObjectURL(file);
       
-      reader.onload = (e) => {
-        if (e.target && e.target.result) {
-          // Salviamo l'immagine come base64 nel localStorage
-          const imageDataUrl = e.target.result.toString();
-          localStorage.setItem('jibli_profile_image', imageDataUrl);
-          
-          toast({
-            title: "Immagine aggiornata",
-            description: "La tua immagine del profilo è stata aggiornata con successo.",
-            duration: 3000
-          });
-          
-          // Pulizia del campo input
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-          
-          // Aggiorna la pagina per mostrare la nuova immagine
-          setTimeout(() => {
-            setIsUploadingImage(false);
-            window.location.reload();
-          }, 1000);
-        }
-      };
+      // Aggiorniamo il profilo utente
+      await updateProfile(currentUser, {
+        photoURL: imageUrl
+      });
       
-      reader.onerror = () => {
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante la lettura dell'immagine.",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-      };
+      toast({
+        title: "Immagine aggiornata",
+        description: "La tua immagine del profilo è stata aggiornata temporaneamente.",
+        duration: 3000
+      });
       
-      // Legge il file come URL dati (base64)
-      reader.readAsDataURL(file);
+      // Note: in un'implementazione completa con Firebase Storage funzionante,
+      // utilizzeremmo la funzione uploadProfileImage qui
+      
+      // Pulizia del campo input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Forziamo un aggiornamento della pagina dopo un breve ritardo
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
       
     } catch (error) {
       console.error("Errore durante l'aggiornamento dell'immagine:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'aggiornamento dell'immagine.",
+        description: "Si è verificato un errore durante l'aggiornamento dell'immagine. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
+    } finally {
       setIsUploadingImage(false);
     }
   };
@@ -312,11 +301,8 @@ export default function Profile() {
             {/* Avatar con overlay per il caricamento dell'immagine */}
             <div className="relative">
               <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage 
-                  src={localStorage.getItem('jibli_profile_image') || currentUser?.photoURL || undefined} 
-                  alt={userName} 
-                />
-                <AvatarFallback>{userName.charAt(0) || "J"}</AvatarFallback>
+                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+                <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
               
               {/* Bottone per il caricamento dell'immagine */}
