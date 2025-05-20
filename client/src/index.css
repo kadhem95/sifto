@@ -2,86 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* JIBLI - Brand Colors */
 :root {
-  /* Verde menta (primario) */
-  --color-primary: #4AD8B7;
-  /* Blu notte (secondario) */
-  --color-secondary: #253b6b;
-  /* Verde menta chiaro (accent) */
-  --color-accent: #E9FFF9;
-}
-
-/* Custom JIBLI styling */
-.jibli-logo {
-  font-weight: 700;
-  font-size: 1.75rem;
-  letter-spacing: 0.05em;
-  color: var(--color-primary);
-}
-
-.jibli-heading {
-  font-weight: 600;
-  color: var(--color-secondary);
-}
-
-.jibli-button-primary {
-  background-color: var(--color-primary);
-  color: white;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-}
-
-.jibli-button-primary:hover {
-  background-color: #3fc3a5;
-}
-
-.jibli-button-secondary {
-  background-color: var(--color-secondary);
-  color: white;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-}
-
-.jibli-button-secondary:hover {
-  background-color: #314c84;
-}
-
-/* Customized avatar for JIBLI branding */
-.jibli-avatar {
-  border: 3px solid var(--color-primary);
-}
-
-:root {
-  /* JIBLI Color Scheme - Verde menta, bianco, blu notte */
+  /* Base */
   --background: 0 0% 100%;
-  --foreground: 220 20% 20%;
-  --muted: 158 10% 95%;
-  --muted-foreground: 220 10% 50%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 20%;
-  --card: 0 0% 100%;
-  --card-foreground: 220 20% 20%;
-  --border: 158 10% 90%;
-  --input: 158 10% 95%;
-  /* Verde menta (primario) */
-  --primary: 158 53% 50%;
+  --foreground: 213 30% 19%;
+  
+  /* Verde acqua - Colore primario */
+  --primary: 175 65% 45%;
   --primary-foreground: 0 0% 100%;
-  /* Blu notte (secondario) */
-  --secondary: 222 47% 28%;
+  
+  /* Blu notte - Colore secondario */
+  --secondary: 213 55% 28%;
   --secondary-foreground: 0 0% 100%;
-  /* Verde menta chiaro (accent) */
-  --accent: 158 53% 95%;
-  --accent-foreground: 158 53% 30%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
-  --ring: 158 53% 50%;
-  --radius: 0.8rem; /* Bordi più arrotondati per un aspetto più amichevole */
-  }
+  
+  /* Altri colori dell'interfaccia */
+  --muted: 210 20% 96%;
+  --muted-foreground: 213 20% 40%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 30% 19%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 30% 19%;
+  --border: 210 25% 90%;
+  --input: 210 25% 90%;
+  --accent: 175 55% 90%;
+  --accent-foreground: 175 65% 25%;
+  --destructive: 0 72% 56%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 175 65% 45%;
+  --radius: 0.75rem;
+}
   .dark {
       --background: 240 10% 3.9%;
 --foreground: 0 0% 98%;

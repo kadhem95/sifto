@@ -43,29 +43,11 @@ export default function MessageItem({
         );
       case "quickAction":
         if (content.startsWith("📍")) {
-          return (
-            <div className="font-medium">
-              <div className="mb-2 text-lg">📍 Punto d'incontro</div>
-              <div>{content.replace("📍 Meeting point: ", "")}</div>
-            </div>
-          );
+          return <div className="font-medium">{content}</div>;
         } else if (content.startsWith("💸")) {
-          return (
-            <div className="font-medium">
-              <div className="mb-2 text-lg">💸 Conferma prezzo</div>
-              <div>{content.replace("💸 ", "")}</div>
-            </div>
-          );
+          return <div className="font-medium">{content}</div>;
         } else if (content.startsWith("📦")) {
-          return (
-            <div className="font-medium">
-              <div className="mb-2 text-lg">📦 Consegna completata</div>
-              <div>Il pacco è stato consegnato con successo!</div>
-              <div className="text-sm mt-2 italic">
-                Lascia una recensione per costruire fiducia nella comunità JIBLI
-              </div>
-            </div>
-          );
+          return <div className="font-medium">{content}</div>;
         }
         return <div>{content}</div>;
       default:
@@ -76,20 +58,20 @@ export default function MessageItem({
   return (
     <div className={`flex ${isSender ? "justify-end" : "justify-start"} mb-4`}>
       {!isSender && senderAvatar && (
-        <Avatar className="w-8 h-8 mr-2 mt-1 border border-[#4AD8B7]/50">
-          <AvatarImage src={senderAvatar} alt={senderName || "Utente"} />
-          <AvatarFallback className="bg-[#E9FFF9] text-[#253b6b]">{senderName?.charAt(0) || "J"}</AvatarFallback>
+        <Avatar className="w-8 h-8 mr-2 mt-1">
+          <AvatarImage src={senderAvatar} alt={senderName || "User"} />
+          <AvatarFallback>{senderName?.charAt(0) || "U"}</AvatarFallback>
         </Avatar>
       )}
       <div
-        className={`p-4 max-w-[80%] shadow-sm ${
+        className={`p-3 max-w-[80%] ${
           isSender
-            ? "bg-[#4AD8B7] text-white rounded-2xl rounded-br-none ml-auto"
-            : "bg-white border border-[#4AD8B7]/20 text-[#253b6b] rounded-2xl rounded-bl-none"
+            ? "bg-primary text-white rounded-t-lg rounded-bl-lg ml-auto"
+            : "bg-neutral-200 text-neutral-900 rounded-t-lg rounded-br-lg"
         }`}
       >
         {renderMessageContent()}
-        <p className={`text-right text-xs ${isSender ? "text-white/80" : "text-[#253b6b]/60"} mt-2`}>
+        <p className={`text-right text-xs ${isSender ? "text-white/70" : "text-neutral-500"} mt-1`}>
           {formatTime(timestamp)}
         </p>
       </div>
