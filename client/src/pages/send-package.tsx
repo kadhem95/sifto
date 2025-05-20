@@ -123,6 +123,7 @@ export default function SendPackage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Da - Località di partenza */}
           <div className="mb-4">
             <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
             <div className="relative">
@@ -152,6 +153,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* A - Località di destinazione */}
           <div className="mb-4">
             <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
             <Input
@@ -165,6 +167,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Entro quando - Data entro cui il pacco deve essere consegnato */}
           <div className="mb-4">
             <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">Entro quando</Label>
             <Input
@@ -178,6 +181,7 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Descrizione del pacco - Testo breve */}
           <div className="mb-4">
             <Label htmlFor="description" className="block text-neutral-700 font-medium mb-2">Descrizione del pacco</Label>
             <textarea
@@ -192,12 +196,13 @@ export default function SendPackage() {
             )}
           </div>
           
+          {/* Misure - Dimensioni o taglia */}
           <div className="mb-4">
-            <Label htmlFor="dimensions" className="block text-neutral-700 font-medium mb-2">Misure (cm) - opzionale</Label>
+            <Label htmlFor="dimensions" className="block text-neutral-700 font-medium mb-2">Misure</Label>
             <Input
               id="dimensions"
               className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="es. 40 x 30 x 20 cm"
+              placeholder="es. piccolo / medio / grande oppure 40 x 30 x 20 cm"
               {...register("dimensions")}
             />
             {errors.dimensions && (
@@ -205,22 +210,9 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Foto del pacco - Campo facoltativo */}
           <div className="mb-4">
-            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
-            <Input
-              id="price"
-              type="number"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="es. 20"
-              {...register("price")}
-            />
-            {errors.price && (
-              <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (obbligatorio)</Label>
+            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco</Label>
             <label 
               htmlFor="image"
               className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center block cursor-pointer"
@@ -255,6 +247,21 @@ export default function SendPackage() {
                 onChange={handleImageChange}
               />
             </label>
+          </div>
+
+          {/* La tua offerta - Cifra proposta */}
+          <div className="mb-6">
+            <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
+            <Input
+              id="price"
+              type="number"
+              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
+              placeholder="es. 20"
+              {...register("price")}
+            />
+            {errors.price && (
+              <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+            )}
           </div>
 
           <Button
