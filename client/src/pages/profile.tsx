@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Rating } from "@/components/ui/rating";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { Camera, UserCircle, Upload } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, uploadProfileImage } from "@/lib/firebase";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -16,6 +18,7 @@ export default function Profile() {
   const [userName, setUserName] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -24,6 +27,9 @@ export default function Profile() {
     totalEarned: 0,
     totalSpent: 0,
   });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUser) {
@@ -142,13 +148,100 @@ export default function Profile() {
         await updateProfile(currentUser, {
           displayName: userName.trim()
         });
+
+        // Aggiorna anche il nome utente in Firestore
+        const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            displayName: userName.trim(),
+            updatedAt: new Date().toISOString()
+          });
+        }
+
+        toast({
+          title: "Profilo aggiornato",
+          description: "Il tuo nome è stato aggiornato con successo.",
+          duration: 3000
+        });
       }
       
       setIsEditing(false);
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("Errore nell'aggiornamento del profilo:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'aggiornamento del profilo.",
+        variant: "destructive",
+        duration: 3000
+      });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Funzione per gestire il click sul bottone di upload dell'immagine
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Funzione per gestire l'upload dell'immagine
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !currentUser) return;
+    
+    const file = files[0];
+    
+    // Controllo delle dimensioni (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File troppo grande",
+        description: "L'immagine non deve superare i 5MB.",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
+    
+    // Controllo del tipo di file
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Formato non supportato",
+        description: "Per favore carica un'immagine in formato JPG, PNG o GIF.",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    
+    try {
+      // Carica l'immagine su Firebase Storage
+      await uploadProfileImage(currentUser.uid, file);
+      
+      toast({
+        title: "Immagine caricata",
+        description: "La tua immagine del profilo è stata aggiornata con successo.",
+        duration: 3000
+      });
+      
+      // Pulizia del campo input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error("Errore durante il caricamento dell'immagine:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il caricamento dell'immagine.",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 

@@ -189,6 +189,46 @@ export const uploadPackageImage = async (packageId: string, file: File) => {
   }
 };
 
+// Funzione per caricare l'immagine del profilo
+export const uploadProfileImage = async (userId: string, file: File) => {
+  try {
+    // Usiamo il timestamp per evitare problemi di cache con lo stesso nome file
+    const fileName = `profile_${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, `users/${userId}/profile/${fileName}`);
+    
+    // Carica il file
+    await uploadBytes(storageRef, file);
+    
+    // Ottieni l'URL del file caricato
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    // Aggiorna il profilo dell'utente su Firebase Auth
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await updateProfile(currentUser, {
+        photoURL: downloadURL
+      });
+    }
+    
+    // Aggiorna anche il profilo dell'utente in Firestore
+    const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+    
+    if (!userSnapshot.empty) {
+      const userDoc = userSnapshot.docs[0];
+      await updateDoc(doc(db, 'users', userDoc.id), {
+        photoURL: downloadURL,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    
+    return downloadURL;
+  } catch (error) {
+    console.error("Errore durante il caricamento dell'immagine del profilo:", error);
+    throw error;
+  }
+};
+
 // Trip functions
 export const createTrip = async (tripData: any) => {
   try {
