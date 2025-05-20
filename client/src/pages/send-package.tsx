@@ -11,11 +11,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
 
 const packageFormSchema = z.object({
-  from: z.string().min(2, "È richiesta la località di origine"),
+  from: z.string().min(2, "È richiesta la località di partenza"),
   to: z.string().min(2, "È richiesta la località di destinazione"),
   deadline: z.string().min(1, "È richiesta una data di scadenza"),
   description: z.string().min(3, "Inserisci una descrizione del pacco"),
-  dimensions: z.string().optional(),
+  dimensions: z.string().min(1, "Seleziona una taglia per il tuo pacco"),
   price: z.coerce.number().min(1, "Inserisci un prezzo valido"),
 });
 
@@ -27,6 +27,7 @@ export default function SendPackage() {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   const {
     register,
@@ -44,6 +45,11 @@ export default function SendPackage() {
       price: 0,
     },
   });
+  
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size);
+    setValue("dimensions", size);
+  };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -60,11 +66,6 @@ export default function SendPackage() {
   const onSubmit = async (data: PackageFormValues) => {
     if (!currentUser) {
       navigate("/login");
-      return;
-    }
-
-    if (!imageFile) {
-      alert("Per favore, carica una foto del tuo pacco");
       return;
     }
 
@@ -88,8 +89,8 @@ export default function SendPackage() {
         await uploadPackageImage(packageRef.id, imageFile);
       }
 
-      // Navigate to the travelers list screen
-      navigate("/travelers");
+      // Navigate to confirmation screen or my shipments
+      navigate("/my-shipments");
     } catch (error) {
       console.error("Error creating package:", error);
     } finally {
@@ -123,7 +124,7 @@ export default function SendPackage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Da - Località di partenza */}
+          {/* Località di partenza */}
           <div className="mb-4">
             <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
             <div className="relative">
@@ -153,7 +154,7 @@ export default function SendPackage() {
             )}
           </div>
 
-          {/* A - Località di destinazione */}
+          {/* Località di destinazione */}
           <div className="mb-4">
             <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
             <Input
@@ -167,7 +168,7 @@ export default function SendPackage() {
             )}
           </div>
 
-          {/* Entro quando - Data entro cui il pacco deve essere consegnato */}
+          {/* Data di consegna */}
           <div className="mb-4">
             <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">Entro quando</Label>
             <Input
@@ -181,7 +182,7 @@ export default function SendPackage() {
             )}
           </div>
 
-          {/* Descrizione del pacco - Testo breve */}
+          {/* Descrizione */}
           <div className="mb-4">
             <Label htmlFor="description" className="block text-neutral-700 font-medium mb-2">Descrizione del pacco</Label>
             <textarea
@@ -196,23 +197,50 @@ export default function SendPackage() {
             )}
           </div>
           
-          {/* Misure - Dimensioni o taglia */}
+          {/* Misure */}
           <div className="mb-4">
-            <Label htmlFor="dimensions" className="block text-neutral-700 font-medium mb-2">Misure</Label>
-            <Input
-              id="dimensions"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="es. piccolo / medio / grande oppure 40 x 30 x 20 cm"
-              {...register("dimensions")}
-            />
+            <Label className="block text-neutral-700 font-medium mb-2">Misure</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => handleSizeSelect("piccolo")}
+                className={`font-medium rounded-lg py-3 border transition-colors
+                  ${selectedSize === "piccolo" 
+                    ? "bg-primary text-white" 
+                    : "bg-neutral-100 text-neutral-700"}`}
+              >
+                🔹 Piccolo
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSizeSelect("medio")}
+                className={`font-medium rounded-lg py-3 border transition-colors
+                  ${selectedSize === "medio" 
+                    ? "bg-primary text-white" 
+                    : "bg-neutral-100 text-neutral-700"}`}
+              >
+                🔹 Medio
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSizeSelect("grande")}
+                className={`font-medium rounded-lg py-3 border transition-colors
+                  ${selectedSize === "grande" 
+                    ? "bg-primary text-white" 
+                    : "bg-neutral-100 text-neutral-700"}`}
+              >
+                🔹 Grande
+              </button>
+            </div>
+            <input type="hidden" {...register("dimensions")} />
             {errors.dimensions && (
               <p className="text-red-500 text-sm mt-1">{errors.dimensions.message}</p>
             )}
           </div>
 
-          {/* Foto del pacco - Campo facoltativo */}
+          {/* Foto del pacco */}
           <div className="mb-4">
-            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco</Label>
+            <Label htmlFor="image" className="block text-neutral-700 font-medium mb-2">Foto del pacco (facoltativo)</Label>
             <label 
               htmlFor="image"
               className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center block cursor-pointer"
@@ -249,7 +277,7 @@ export default function SendPackage() {
             </label>
           </div>
 
-          {/* La tua offerta - Cifra proposta */}
+          {/* Offerta */}
           <div className="mb-6">
             <Label htmlFor="price" className="block text-neutral-700 font-medium mb-2">La tua offerta (€)</Label>
             <Input
@@ -264,9 +292,10 @@ export default function SendPackage() {
             )}
           </div>
 
+          {/* Pulsante pubblica */}
           <Button
             type="submit"
-            className="w-full bg-primary text-white font-medium rounded-lg py-4 mb-4 h-auto"
+            className="w-full bg-primary hover:bg-blue-400 text-white font-medium rounded-lg py-4 mb-4 h-auto transition-all duration-200 active:scale-[0.98] active:opacity-90"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -275,7 +304,7 @@ export default function SendPackage() {
                 Elaborazione in corso...
               </div>
             ) : (
-              "Trova Viaggiatori"
+              "Pubblica il pacco"
             )}
           </Button>
         </form>
