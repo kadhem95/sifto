@@ -17,29 +17,43 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">
-          Cosa vorresti fare oggi?
-        </h1>
+      <div className="p-6 pb-20">
+        {/* JIBLI Logo and Branding */}
+        <div className="flex flex-col items-center mb-8 pt-4">
+          <h1 className="jibli-logo mb-1">JIBLI</h1>
+          <h2 className="text-2xl font-bold text-center mb-2">
+            Hai un pacco? JIBLI.
+          </h2>
+          <p className="text-center text-gray-600 mb-4">
+            Spedisci con chi viaggia tra Europa e Maghreb.
+          </p>
+        </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           {/* Send Package Card */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
-              alt="Person packing a box for shipping"
-              className="w-full h-48 object-cover"
-            />
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative">
+              <img
+                src="https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
+                alt="Person packing a box for shipping"
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
+                <h2 className="text-2xl font-bold text-white p-4">
+                  Fratello, hai un pacco da mandare?
+                </h2>
+              </div>
+            </div>
             <div className="p-5">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                Invia un Pacco
-              </h2>
-              <p className="text-neutral-500 mb-4">
-                Trova viaggiatori diretti alla tua destinazione che possono trasportare il tuo pacco
+              <p className="text-gray-600 mb-4">
+                Trova viaggiatori diretti alla tua destinazione che possono trasportare il tuo pacco. Facile, veloce e affidabile.
+              </p>
+              <p className="text-sm italic text-gray-500 mb-4">
+                "Ogni viaggio è un favore che torna"
               </p>
               <Button
                 onClick={handleSendPackage}
-                className="w-full bg-primary text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
+                className="jibli-button-primary w-full flex items-center justify-center"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -53,28 +67,35 @@ export default function Home() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Invia un Pacco
+                Spedisci un pacco
               </Button>
             </div>
           </div>
 
           {/* Travel Card */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1499591934245-40b55745b905?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
-              alt="Person traveling with luggage"
-              className="w-full h-48 object-cover"
-            />
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative">
+              <img
+                src="https://images.unsplash.com/photo-1499591934245-40b55745b905?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"
+                alt="Person traveling with luggage"
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
+                <h2 className="text-2xl font-bold text-white p-4">
+                  Hai spazio per portare qualcosa?
+                </h2>
+              </div>
+            </div>
             <div className="p-5">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                Segnala un Viaggio
-              </h2>
-              <p className="text-neutral-500 mb-4">
-                Raccontaci del tuo prossimo viaggio e guadagna consegnando pacchi
+              <p className="text-gray-600 mb-4">
+                Raccontaci del tuo prossimo viaggio e guadagna consegnando pacchi a chi ne ha bisogno.
+              </p>
+              <p className="text-sm italic text-gray-500 mb-4">
+                "JIBLI lo porta a chi ami"
               </p>
               <Button
                 onClick={handleReportTrip}
-                className="w-full bg-secondary text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
+                className="jibli-button-secondary w-full flex items-center justify-center"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -88,9 +109,14 @@ export default function Home() {
                     clipRule="evenodd"
                   />
                 </svg>
-                Segnala un Viaggio
+                Segnala un viaggio
               </Button>
             </div>
+          </div>
+          
+          {/* Disclaimer */}
+          <div className="mt-4 px-2 text-center text-sm text-gray-500">
+            <p>JIBLI non controlla i pacchi. Fidati di chi viaggia, valuta e scegli con intelligenza.</p>
           </div>
         </div>
       </div>
