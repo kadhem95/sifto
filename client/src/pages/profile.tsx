@@ -7,7 +7,7 @@ import { Rating } from "@/components/ui/rating";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, UserCircle, Upload, Edit2, LogOut, ChevronRight } from "lucide-react";
+import { Camera, UserCircle, Upload } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc } from "firebase/firestore";
 import { db, uploadProfileImage } from "@/lib/firebase";
@@ -294,127 +294,123 @@ export default function Profile() {
   return (
     <AppLayout>
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-secondary">Il mio Profilo</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profilo</h1>
 
-        {/* Profile Card */}
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
-          {/* Header con background gradient */}
-          <div className="bg-gradient-to-r from-primary/20 to-secondary/20 h-24 relative">
-            <div className="absolute -bottom-12 left-6">
-              <div className="relative">
-                <Avatar className="w-24 h-24 border-4 border-white shadow">
-                  {currentUser?.photoURL ? (
-                    <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || "Utente"} />
-                  ) : (
-                    <AvatarFallback className="bg-primary/10">
-                      <UserCircle className="w-full h-full text-primary" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <button
-                  className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full shadow-lg"
-                  onClick={handleImageButtonClick}
-                  disabled={isUploadingImage}
-                  aria-label="Cambia immagine profilo"
-                >
-                  {isUploadingImage ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Camera size={20} />
-                  )}
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  ref={fileInputRef}
-                />
-              </div>
+          <div className="p-6 flex flex-col items-center">
+            {/* Avatar con overlay per il caricamento dell'immagine */}
+            <div className="relative">
+              <Avatar className="w-24 h-24 mb-4">
+                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+                <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+              </Avatar>
+              
+              {/* Bottone per il caricamento dell'immagine */}
+              <button 
+                className="absolute bottom-4 right-0 bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors"
+                onClick={handleImageButtonClick}
+                disabled={isUploadingImage}
+                title="Cambia immagine profilo"
+              >
+                {isUploadingImage ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Camera size={16} />
+                )}
+              </button>
+              
+              {/* Input file nascosto */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
-          </div>
-
-          {/* Contenuto profilo */}
-          <div className="pt-14 px-6 pb-6">
+            
             {isEditing ? (
-              <div className="flex items-center mb-4 w-full max-w-xs">
+              <div className="w-full max-w-xs mb-4">
+                <label htmlFor="profile-name" className="block text-sm text-neutral-500 mb-1 text-center">
+                  Il tuo nome
+                </label>
                 <input
+                  id="profile-name"
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="flex-1 border border-neutral-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Il tuo nome"
-                  autoFocus
+                  className="w-full bg-neutral-100 rounded-lg px-4 py-2 border border-neutral-300 text-center mb-3"
+                  placeholder="Inserisci il tuo nome"
+                  maxLength={50}
                 />
-                <Button
-                  variant="default"
-                  className="ml-2 bg-primary text-white hover:bg-primary/90"
-                  onClick={handleUpdateProfile}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    "Salva"
-                  )}
-                </Button>
+                <div className="flex justify-center space-x-3">
+                  <Button
+                    onClick={() => setIsEditing(false)}
+                    variant="outline"
+                    className="px-4"
+                    disabled={isLoading}
+                  >
+                    Annulla
+                  </Button>
+                  <Button
+                    onClick={handleUpdateProfile}
+                    className="px-4 bg-primary text-white"
+                    disabled={isLoading || !userName.trim()}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Salvataggio...
+                      </div>
+                    ) : (
+                      "Salva"
+                    )}
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center mb-3">
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  {currentUser?.displayName || "Utente"}
-                </h2>
-                <button
-                  className="ml-2 text-primary p-1 rounded-full hover:bg-primary/10"
-                  onClick={() => {
-                    setUserName(currentUser?.displayName || "");
-                    setIsEditing(true);
-                  }}
-                  aria-label="Modifica nome"
+              <>
+                <h2 className="text-xl font-semibold text-neutral-900 mb-1">{userName || "Utente"}</h2>
+                <p className="text-neutral-500 mb-2">{currentUser?.phoneNumber || currentUser?.email}</p>
+                <div className="flex items-center mb-4">
+                  <Rating value={userProfile?.rating || 0} readOnly size="sm" />
+                  <span className="text-sm text-neutral-500 ml-1">
+                    {userProfile?.rating?.toFixed(1) || "0.0"} ({userProfile?.reviewCount || 0} recensioni)
+                  </span>
+                </div>
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  className="text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
                 >
-                  <Edit2 size={16} />
-                </button>
-              </div>
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Modifica Nome
+                </Button>
+              </>
             )}
+          </div>
+        </div>
 
-            <div className="flex items-center mb-5">
-              <Rating value={userProfile?.rating || 0} max={5} readOnly size="sm" />
-              <span className="ml-2 text-sm text-neutral-600">
-                {userProfile?.rating?.toFixed(1) || "0.0"} ({userProfile?.reviewCount || 0} recensioni)
-              </span>
-            </div>
-
-            {/* Statistiche utente */}
-            <div className="grid grid-cols-2 gap-4 w-full mb-6">
-              <div className="bg-primary/5 p-3 rounded-lg text-center">
-                <p className="text-sm text-neutral-600">Pacchi inviati</p>
-                <p className="text-xl font-semibold text-secondary">{stats.packagesSent}</p>
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Statistiche attività</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Pacchi inviati</p>
+                <p className="text-xl font-semibold text-neutral-900">{stats.packagesSent}</p>
               </div>
-              <div className="bg-secondary/5 p-3 rounded-lg text-center">
-                <p className="text-sm text-neutral-600">Viaggi segnalati</p>
-                <p className="text-xl font-semibold text-secondary">{stats.tripsReported}</p>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Viaggi segnalati</p>
+                <p className="text-xl font-semibold text-neutral-900">{stats.tripsReported}</p>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg text-center">
-                <p className="text-sm text-neutral-600">Totale guadagnato</p>
-                <p className="text-xl font-semibold text-green-600">€{stats.totalEarned.toFixed(2)}</p>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Totale guadagnato</p>
+                <p className="text-xl font-semibold text-secondary">{stats.totalEarned}€</p>
               </div>
-              <div className="bg-red-50 p-3 rounded-lg text-center">
-                <p className="text-sm text-neutral-600">Totale speso</p>
-                <p className="text-xl font-semibold text-red-600">€{stats.totalSpent.toFixed(2)}</p>
+              <div className="bg-neutral-50 p-3 rounded-lg">
+                <p className="text-neutral-500 text-sm">Totale speso</p>
+                <p className="text-xl font-semibold text-primary">{stats.totalSpent}€</p>
               </div>
             </div>
-            
-            {/* Pulsante di logout */}
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2 text-secondary border-secondary/30 hover:bg-secondary/5"
-              onClick={() => setShowLogoutConfirm(true)}
-            >
-              <LogOut size={16} />
-              <span>Esci dall'account</span>
-            </Button>
           </div>
         </div>
 

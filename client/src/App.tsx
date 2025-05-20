@@ -13,7 +13,7 @@ import PackagesList from "@/pages/packages-list";
 import Chat from "@/pages/chat";
 import MyShipments from "@/pages/my-shipments";
 import Review from "@/pages/review";
-import Profile from "@/pages/profile-new";
+import Profile from "@/pages/profile";
 import { AuthProvider } from "./context/auth-context";
 import { useEffect } from "react";
 import { auth } from "./lib/firebase";
