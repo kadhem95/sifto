@@ -49,46 +49,53 @@ export default function Login() {
   };
 
   return (
-    <div className="h-full flex flex-col justify-between p-6 min-h-screen">
+    <div className="h-full flex flex-col justify-between p-6 min-h-screen bg-gradient-to-b from-accent to-background">
       <div className="flex flex-col items-center justify-center mt-8">
-        <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center mb-4">
+        <div className="w-28 h-28 bg-gradient-to-br from-primary to-secondary rounded-2xl shadow-lg flex items-center justify-center mb-6">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-14 w-14 text-white"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+            className="h-16 w-16 text-white"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h-1a1 1 0 01-1-1v-1a1 1 0 011-1h1V6a2 2 0 012-2h1.38l-1.73-1.73A1 1 0 0112.22 1h2.07a1 1 0 01.7.29l2.71 2.71a1 1 0 01.29.7 2 2 0 01-2 2H15v8a1 1 0 01-1 1h-.05a2.5 2.5 0 01-4.9 0H3z" />
+            <path d="M5 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2" />
+            <path d="M9 2 L5 8 L13 8 L17 2 z" />
+            <path d="M12 13 L12 17" />
+            <circle cx="12" cy="13" r="1" />
           </svg>
         </div>
-        <h1 className="text-3xl font-bold text-neutral-900 mb-2">PackShare</h1>
-        <p className="text-neutral-500 text-center mb-8">
-          Connette spedizionieri con viaggiatori
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
+        <p className="text-neutral-600 text-center font-medium mb-8">
+          Connette spedizionieri con viaggiatori in modo semplice e sicuro
         </p>
 
-        <div className="w-full max-w-md">
-          <h2 className="text-xl font-bold text-neutral-900 mb-4">
-            {isRegister ? "Registrati" : "Accedi"}
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 border border-accent">
+          <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+            {isRegister ? "Crea il tuo account" : "Bentornato su SIFTO"}
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {isRegister && (
               <div className="space-y-2">
-                <Label htmlFor="displayName">Nome utente</Label>
+                <Label htmlFor="displayName" className="text-neutral-700 font-medium">Nome utente</Label>
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="Il tuo nome"
+                  placeholder="Il tuo nome completo"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required={isRegister}
+                  className="rounded-xl py-3 px-4 bg-accent/50 border-accent/80 focus:border-primary focus:ring-primary"
                 />
               </div>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-neutral-700 font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -96,42 +103,51 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="rounded-xl py-3 px-4 bg-accent/50 border-accent/80 focus:border-primary focus:ring-primary"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-neutral-700 font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="La tua password"
+                placeholder="Minimo 6 caratteri"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="rounded-xl py-3 px-4 bg-accent/50 border-accent/80 focus:border-primary focus:ring-primary"
               />
             </div>
             
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
               </div>
             )}
             
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 rounded-xl py-6 h-auto font-bold text-lg mt-4" 
               disabled={isLoading}
             >
-              {isLoading ? "Caricamento..." : isRegister ? "Registrati" : "Accedi"}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Caricamento...
+                </div>
+              ) : (
+                isRegister ? "Crea account" : "Accedi"
+              )}
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
+          <div className="mt-8 text-center">
             <button 
               type="button"
               onClick={toggleMode}
-              className="text-primary hover:underline"
+              className="text-primary font-medium hover:text-secondary transition-colors"
             >
               {isRegister 
                 ? "Hai già un account? Accedi" 
