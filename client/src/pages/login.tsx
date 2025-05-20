@@ -62,18 +62,20 @@ export default function Login() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            {/* Logo minimalista: pacco al centro e freccia circolare */}
-            <rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="white" stroke="white" />
-            
-            {/* Arco che rappresenta il viaggio */}
+            {/* La S fluida che rappresenta strada/tragitto */}
             <path 
-              d="M6 12C6 8.5 9.5 6 12 6C14.5 6 18 8.5 18 12" 
+              d="M7 8C7 6 9 6 12 6C15 6 17 8 17 10C17 13 9 13 9 16C9 18 11 18 14 18C17 18 17 16 17 16" 
               stroke="white"
               fill="none"
+              strokeWidth="3"
+              strokeLinecap="round"
             />
             
-            {/* Freccia che indica movimento/direzione */}
-            <path d="M18 12l-2 -2M18 12l-2 2" stroke="white" />
+            {/* Piccolo pacco stilizzato lungo il percorso */}
+            <rect x="8" y="11.5" width="3" height="3" rx="0.5" fill="white" stroke="none" />
+            
+            {/* Indicatore di direzione */}
+            <path d="M17 16l-1.5 -1.5M17 16l-1.5 1.5" stroke="white" strokeWidth="1.5" />
           </svg>
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
