@@ -51,26 +51,46 @@ export default function Login() {
   return (
     <div className="h-full flex flex-col justify-between p-6 min-h-screen bg-gradient-to-b from-accent to-background">
       <div className="flex flex-col items-center justify-center mt-8">
-        <div className="w-28 h-28 bg-gradient-to-br from-primary to-secondary rounded-2xl shadow-lg flex items-center justify-center mb-6">
+        <div className="w-28 h-28 bg-gradient-to-br from-primary to-secondary rounded-2xl shadow-lg flex items-center justify-center mb-6 overflow-hidden">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-16 w-16 text-white"
+            className="h-20 w-20 text-white"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M5 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2" />
-            <path d="M9 2 L5 8 L13 8 L17 2 z" />
-            <path d="M12 13 L12 17" />
-            <circle cx="12" cy="13" r="1" />
+            {/* Elemento principale - forme che rappresentano persone/pacchi in movimento */}
+            <path 
+              d="M4 14l4-8 3 5" 
+              fill="none" 
+              strokeWidth="2" 
+            />
+            <path 
+              d="M16 14l-4-8-3 5" 
+              fill="none" 
+              strokeWidth="2" 
+            />
+            
+            {/* Elemento di connessione - linea curva che connette */}
+            <path 
+              d="M4 14c0 0 4 3 8 0c4 -3 8 0 8 0" 
+              fill="none" 
+              strokeWidth="2" 
+            />
+            
+            {/* Pacco/valigia simbolico */}
+            <rect x="9" y="15" width="6" height="4" rx="1" fill="white" />
+            
+            {/* Elementi di movimento - frecce stilizzate */}
+            <path d="M7 18l-2 2M17 18l2 2" strokeWidth="1.5" />
           </svg>
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
         <p className="text-neutral-600 text-center font-medium mb-8">
-          Connette spedizionieri con viaggiatori in modo semplice e sicuro
+          SIFTO connette chi deve spedire con chi sta per viaggiare
         </p>
 
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 border border-accent">
