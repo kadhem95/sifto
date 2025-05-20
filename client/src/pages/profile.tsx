@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, uploadProfileImage } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
@@ -266,7 +266,7 @@ export default function Profile() {
     }
   };
 
-  // Funzione semplificata per gestire l'upload dell'immagine del profilo
+  // Funzione per gestire l'upload dell'immagine del profilo utilizzando l'utility centralizzata
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
@@ -275,21 +275,16 @@ export default function Profile() {
     event.target.value = "";
     
     setIsUploadingImage(true);
-    console.log("Inizio upload immagine...");
+    console.log("Inizio upload immagine del profilo...");
     
     try {
-      // Controllo dimensioni file (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("L'immagine è troppo grande. Dimensione massima: 5MB");
-      }
-      
       // Crea un riferimento allo storage con un nome file unico
       const fileName = `profile_${currentUser.uid}_${Date.now()}`;
       const storageRef = ref(storage, `profile_images/${fileName}`);
       
       console.log("Caricamento file su Firebase Storage...");
       
-      // Carica il file con un metodo sincrono standard per massima compatibilità
+      // Carica il file con un metodo sincrono standard
       const snapshot = await uploadBytes(storageRef, file);
       console.log("Upload completato con successo:", snapshot.metadata.name);
       
@@ -297,11 +292,6 @@ export default function Profile() {
       console.log("Ottenimento URL di download...");
       const downloadURL = await getDownloadURL(storageRef);
       console.log("URL ottenuto:", downloadURL);
-      
-      // Verifica che l'URL sia valido
-      if (!downloadURL) {
-        throw new Error("URL di download non valido");
-      }
       
       // Aggiorna l'URL della foto nel profilo di autenticazione
       console.log("Aggiornamento profilo autenticazione...");
@@ -326,24 +316,33 @@ export default function Profile() {
         console.log("Documento Firestore aggiornato");
       } else {
         // Se l'utente non esiste nel database, crealo
-        const newUserDoc = await addDoc(collection(db, "users"), {
+        await addDoc(collection(db, "users"), {
           uid: currentUser.uid,
           displayName: currentUser.displayName || "",
+          email: currentUser.email || "",
           photoURL: downloadURL,
           createdAt: new Date().toISOString(),
           rating: 0,
           reviewCount: 0
         });
-        console.log("Nuovo documento Firestore creato:", newUserDoc.id);
+        console.log("Nuovo documento Firestore creato");
       }
+      console.log("Immagine caricata con successo:", downloadURL);
       
-      // Aggiorna manualmente l'immagine nell'interfaccia utente
+      // Aggiorna manualmente l'immagine nell'interfaccia utente per un feedback immediato
       const avatarImage = document.querySelector('.avatar-image') as HTMLImageElement;
       if (avatarImage) {
         // Imposta un timestamp casuale per evitare il caching
         avatarImage.src = `${downloadURL}?t=${Date.now()}`;
         console.log("Immagine profilo aggiornata nell'interfaccia");
       }
+      
+      // Forza un refresh dell'avatar per prevenire problemi di cache
+      setTimeout(() => {
+        if (avatarImage && currentUser.photoURL) {
+          avatarImage.src = `${currentUser.photoURL}?t=${Date.now()}`;
+        }
+      }, 500);
       
       // Mostra un messaggio di conferma
       toast({
