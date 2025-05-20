@@ -3,27 +3,34 @@
 @tailwind utilities;
 
 :root {
-      --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 60 4.8% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 207 90% 54%;
---primary-foreground: 211 100% 99%;
---secondary: 60 4.8% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 60 4.8% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 20 14.3% 4.1%;
---radius: 0.5rem;
-  }
+  /* Base */
+  --background: 0 0% 100%;
+  --foreground: 213 30% 19%;
+  
+  /* Verde acqua - Colore primario */
+  --primary: 175 65% 45%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Blu notte - Colore secondario */
+  --secondary: 213 55% 28%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Altri colori dell'interfaccia */
+  --muted: 210 20% 96%;
+  --muted-foreground: 213 20% 40%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 30% 19%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 30% 19%;
+  --border: 210 25% 90%;
+  --input: 210 25% 90%;
+  --accent: 175 55% 90%;
+  --accent-foreground: 175 65% 25%;
+  --destructive: 0 72% 56%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 175 65% 45%;
+  --radius: 0.75rem;
+}
   .dark {
       --background: 240 10% 3.9%;
 --foreground: 0 0% 98%;
