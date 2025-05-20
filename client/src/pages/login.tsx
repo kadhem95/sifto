@@ -58,26 +58,22 @@ export default function Login() {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            {/* Elemento centrale - pacco */}
-            <rect x="8" y="10" width="8" height="8" rx="1" strokeWidth="2" />
+            {/* Logo minimalista: pacco al centro e freccia circolare */}
+            <rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="white" stroke="white" />
             
-            {/* Elemento di movimento - freccia circolare */}
-            <path d="M16 8C17.5 9.5 18 11.5 17 14" strokeWidth="2" />
-            <path d="M8 8C6.5 9.5 6 11.5 7 14" strokeWidth="2" />
+            {/* Arco che rappresenta il viaggio */}
+            <path 
+              d="M6 12C6 8.5 9.5 6 12 6C14.5 6 18 8.5 18 12" 
+              stroke="white"
+              fill="none"
+            />
             
-            {/* Elementi di connessione - punti che rappresentano persone */}
-            <circle cx="4" cy="7" r="1.5" fill="white" />
-            <circle cx="20" cy="7" r="1.5" fill="white" />
-            
-            {/* Elemento di movimento - linea di viaggio */}
-            <path d="M4 7C8 3 16 3 20 7" strokeWidth="1.5" strokeDasharray="1,1" />
-            
-            {/* Indicatore di direzione */}
-            <path d="M12 5v-2M12 3l-1.5 1.5M12 3l1.5 1.5" strokeWidth="1.5" />
+            {/* Freccia che indica movimento/direzione */}
+            <path d="M18 12l-2 -2M18 12l-2 2" stroke="white" />
           </svg>
         </div>
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">SIFTO</h1>
