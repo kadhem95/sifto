@@ -39,7 +39,7 @@ export default function Home() {
               </p>
               <Button
                 onClick={handleSendPackage}
-                className="w-full bg-primary text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
+                className="w-full bg-primary hover:bg-blue-400 text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center transition-all duration-200 active:scale-[0.98] active:opacity-90"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +74,7 @@ export default function Home() {
               </p>
               <Button
                 onClick={handleReportTrip}
-                className="w-full bg-[#3DD598] text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center"
+                className="w-full bg-[#3DD598] hover:bg-[#5ae0ad] text-white font-medium rounded-lg py-4 h-auto flex items-center justify-center transition-all duration-200 active:scale-[0.98] active:opacity-90"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
