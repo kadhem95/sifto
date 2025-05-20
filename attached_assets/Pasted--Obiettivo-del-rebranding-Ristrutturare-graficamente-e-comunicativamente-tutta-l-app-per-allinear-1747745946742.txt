@@ -1,0 +1,90 @@
+🎯 Obiettivo del rebranding:
+Ristrutturare graficamente e comunicativamente tutta l’app per allinearla completamente al nuovo nome “JIBLI”.
+Tutto deve riflettere l’identità del brand: umano, diretto, semplice e vicino alla comunità maghrebina in Europa.
+
+✅ Identità del brand: JIBLI
+Significato: “Portami” (in arabo dialettale)
+
+Tono: Umano, caldo, accessibile
+
+Missione: Connettere persone tra Europa e Nordafrica per scambiarsi pacchi in modo facile, veloce e affidabile
+
+Pubblico: Tunisini, marocchini, algerini, egiziani in Europa (Italia, Francia, Germania, Spagna)
+
+Mood: Familiare, concreto, affidabile ma informale
+
+🎨 Branding da applicare (UI/UX, visual, testo)
+1. Nome e logo
+Mostrare sempre il nome “JIBLI” in alto, in font chiaro e leggibile
+
+Logo: semplice, rotondo, può includere una valigia, un pacco o una freccia che “va verso casa”
+
+Colori consigliati: verde menta, bianco, blu notte (caldi, chiari e puliti)
+
+2. Home page
+Titolo: “Hai un pacco? JIBLI.”
+
+Sottotitolo: “Spedisci con chi viaggia tra Europa e Maghreb.”
+
+Due pulsanti:
+🔵 Spedisci un pacco
+🟢 Segnala un viaggio
+
+3. Testi in tutta l’app
+Riscrivere i testi con un tono umano e diretto
+Esempi:
+
+“Fratello, dove vai?”
+
+“Hai spazio per portare qualcosa?”
+
+“Pacco pronto? Facciamo partire JIBLI.”
+
+Aggiungere micro-frasi motivazionali (es. “Ogni viaggio è un favore che torna”, “Jibli lo porta a chi ami”)
+
+📱 UI/UX da rivedere
+Design semplice, massimo 2–3 tocchi per qualsiasi azione
+
+Ogni schermata deve richiamare il tono amichevole e chiaro di JIBLI
+
+Tutte le immagini devono comunicare viaggio, vicinanza, pacchi, relazioni familiari
+
+Eliminare elementi tecnici inutili o freddi: più spazio alla comunicazione visiva reale
+
+⭐ Profili e fiducia
+Ogni utente ha:
+
+Immagine profilo
+
+Nome utente
+
+Rating (stelle)
+
+Recensioni brevi
+
+Profilo visibile nelle chat e negli annunci, stile WhatsApp/BlaBlaCar
+
+📦 Chat, pacchi, viaggi
+Le azioni principali devono sempre sembrare una conversazione tra persone che si aiutano
+
+Nessun campo tecnico complicato
+
+Foto + descrizione libera del pacco (no taglie “medio/grande”)
+
+Chi viaggia guarda, decide, risponde
+
+🛡️ Sicurezza e fiducia
+Profilo con numero verificato
+
+Chat interna tracciata
+
+Recensioni pubbliche
+
+Disclaimer: “JIBLI non controlla i pacchi. Fidati di chi viaggia, valuta e scegli con intelligenza.”
+
+🎯 Output atteso
+App rinominata e brandizzata interamente come “JIBLI”
+
+Logo, font, testi, layout e interfaccia aggiornati secondo stile, tono e missione del nome
+
+Tutto coerente, professionale, ma umano
