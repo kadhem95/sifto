@@ -9,14 +9,7 @@ import {
   User
 } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
-import { 
-  getStorage, 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  uploadString,
-  deleteObject
-} from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Initialize Firebase configuration
 const firebaseConfig = {
@@ -160,74 +153,6 @@ export const getUserProfile = async (userId: string) => {
     };
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    throw error;
-  }
-};
-
-// Carica l'immagine del profilo per un utente specifico
-export const uploadProfileImage = async (user: User, file: File): Promise<string> => {
-  try {
-    // Verifica che ci sia un utente e un file
-    if (!user || !file) {
-      throw new Error("Utente o file non valido");
-    }
-    
-    // Verifica la dimensione del file (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error("L'immagine è troppo grande. Dimensione massima: 5MB");
-    }
-    
-    // Verifica il tipo di file (solo immagini)
-    if (!file.type.startsWith('image/')) {
-      throw new Error("Il file deve essere un'immagine (JPG, PNG, GIF, ecc.)");
-    }
-    
-    // Genera un nome di file univoco
-    const fileName = `profile_${user.uid}_${Date.now()}`;
-    const storageRef = ref(storage, `profile_images/${fileName}`);
-    
-    // Carica l'immagine
-    const snapshot = await uploadBytes(storageRef, file);
-    console.log("Upload completato:", snapshot.metadata.name);
-    
-    // Ottieni l'URL di download
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    if (!downloadURL) {
-      throw new Error("Errore nel recupero dell'URL dell'immagine");
-    }
-    
-    // Aggiorna il profilo dell'utente in Firebase Auth
-    await updateProfile(user, {
-      photoURL: downloadURL
-    });
-    
-    // Aggiorna anche il profilo in Firestore
-    const userQuery = query(collection(db, 'users'), where('uid', '==', user.uid));
-    const userSnapshot = await getDocs(userQuery);
-    
-    if (!userSnapshot.empty) {
-      // Aggiorna il documento esistente
-      const userDoc = userSnapshot.docs[0];
-      await updateDoc(doc(db, 'users', userDoc.id), {
-        photoURL: downloadURL
-      });
-    } else {
-      // Crea un nuovo documento se non esiste
-      await addDoc(collection(db, 'users'), {
-        uid: user.uid,
-        displayName: user.displayName || "",
-        email: user.email || "",
-        photoURL: downloadURL,
-        createdAt: new Date().toISOString(),
-        rating: 0,
-        reviewCount: 0
-      });
-    }
-    
-    return downloadURL;
-  } catch (error: any) {
-    console.error("Errore durante il caricamento dell'immagine del profilo:", error);
     throw error;
   }
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -7,21 +7,16 @@ import { Rating } from "@/components/ui/rating";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
-import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage, uploadProfileImage } from "@/lib/firebase";
-import { useToast } from "@/hooks/use-toast";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Profile() {
   const [, navigate] = useLocation();
   const { currentUser, userProfile } = useAuth();
-  const { toast } = useToast();
   const [userName, setUserName] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
-  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [stats, setStats] = useState({
     packagesSent: 0,
@@ -42,162 +37,92 @@ export default function Profile() {
 
     const fetchData = async () => {
       try {
-        // Fetch reviews con gestione dell'errore di indice
-        try {
-          const reviewsQuery = query(
-            collection(db, "reviews"),
-            where("receiverId", "==", currentUser.uid),
-            orderBy("createdAt", "desc"),
-            limit(5)
-          );
-          const reviewsSnapshot = await getDocs(reviewsQuery);
-          
-          const reviewsData = await Promise.all(
-            reviewsSnapshot.docs.map(async (doc) => {
-              const reviewData = doc.data();
-              
-              // Get sender info
-              const userQuery = query(
-                collection(db, "users"),
-                where("uid", "==", reviewData.senderId)
-              );
-              const userSnapshot = await getDocs(userQuery);
-              
-              const userData = !userSnapshot.empty ? userSnapshot.docs[0].data() : null;
-              
-              return {
-                id: doc.id,
-                ...reviewData,
-                sender: userData ? {
-                  name: userData.displayName || "Sconosciuto",
-                  photoURL: userData.photoURL
-                } : null
-              };
-            })
-          );
-          
-          setReviews(reviewsData);
-        } catch (reviewError: any) {
-          console.error("Errore nel caricamento delle recensioni:", reviewError);
-          
-          // Controlla se l'errore è dovuto alla mancanza di un indice
-          if (reviewError.code === 'failed-precondition' && reviewError.message.includes('index')) {
-            console.log("Questo errore è dovuto alla mancanza di un indice in Firestore");
+        // Fetch reviews
+        const reviewsQuery = query(
+          collection(db, "reviews"),
+          where("receiverId", "==", currentUser.uid),
+          orderBy("createdAt", "desc"),
+          limit(5)
+        );
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        
+        const reviewsData = await Promise.all(
+          reviewsSnapshot.docs.map(async (doc) => {
+            const reviewData = doc.data();
             
-            // Estrai l'URL per la creazione dell'indice dal messaggio di errore
-            const errorMsg = reviewError.message || "";
-            const urlMatch = errorMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/);
-            const indexUrl = urlMatch ? urlMatch[1] : null;
+            // Get sender info
+            const userQuery = query(
+              collection(db, "users"),
+              where("uid", "==", reviewData.senderId)
+            );
+            const userSnapshot = await getDocs(userQuery);
             
-            // Log per debug
-            console.error("Messaggio completo dell'errore:", errorMsg);
-            if (indexUrl) {
-              console.log("URL per creare l'indice:", indexUrl);
-              
-              // Imposta l'URL dell'indice nello stato per mostrare il banner
-              setFirestoreIndexUrl(indexUrl);
-              
-              // Mostra anche un toast per maggiore visibilità
-              toast({
-                title: "Indice Firestore necessario",
-                description: "Per visualizzare le recensioni, è necessario creare un indice composito in Firestore.",
-                variant: "default",
-              });
-            } else {
-              // Fallback se l'URL non viene trovato
-              toast({
-                title: "Indice Firestore mancante",
-                description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni.",
-                variant: "default",
-              });
+            const userData = !userSnapshot.empty ? userSnapshot.docs[0].data() : null;
+            
+            return {
+              id: doc.id,
+              ...reviewData,
+              sender: userData ? {
+                name: userData.displayName || "Unknown",
+                photoURL: userData.photoURL
+              } : null
+            };
+          })
+        );
+        
+        setReviews(reviewsData);
+        
+        // Fetch stats
+        const packagesQuery = query(
+          collection(db, "packages"),
+          where("userId", "==", currentUser.uid)
+        );
+        const packagesSnapshot = await getDocs(packagesQuery);
+        
+        const tripsQuery = query(
+          collection(db, "trips"),
+          where("userId", "==", currentUser.uid)
+        );
+        const tripsSnapshot = await getDocs(tripsQuery);
+        
+        // Calculate total spent on packages
+        const totalSpent = packagesSnapshot.docs.reduce((sum, doc) => {
+          const packageData = doc.data();
+          return sum + (packageData.price || 0);
+        }, 0);
+        
+        // Calculate total earned from trips with completed matches
+        let totalEarned = 0;
+        for (const tripDoc of tripsSnapshot.docs) {
+          const matchesQuery = query(
+            collection(db, "matches"),
+            where("tripId", "==", tripDoc.id),
+            where("status", "==", "completed")
+          );
+          const matchesSnapshot = await getDocs(matchesQuery);
+          
+          for (const matchDoc of matchesSnapshot.docs) {
+            const matchData = matchDoc.data();
+            
+            const packageQuery = query(
+              collection(db, "packages"),
+              where("__name__", "==", matchData.packageId)
+            );
+            const packageSnapshot = await getDocs(packageQuery);
+            
+            if (!packageSnapshot.empty) {
+              const packageData = packageSnapshot.docs[0].data();
+              totalEarned += packageData.price || 0;
             }
           }
-          
-          // Imposta recensioni vuote in caso di errore
-          setReviews([]);
         }
         
-        // Fetch stats in blocchi separati per robustezza
-        try {
-          // Pacchetti inviati
-          const packagesQuery = query(
-            collection(db, "packages"),
-            where("userId", "==", currentUser.uid)
-          );
-          const packagesSnapshot = await getDocs(packagesQuery);
-          
-          // Viaggi segnalati
-          const tripsQuery = query(
-            collection(db, "trips"),
-            where("userId", "==", currentUser.uid)
-          );
-          const tripsSnapshot = await getDocs(tripsQuery);
-          
-          // Calculate total spent on packages
-          const totalSpent = packagesSnapshot.docs.reduce((sum, doc) => {
-            const packageData = doc.data();
-            return sum + (packageData.price || 0);
-          }, 0);
-          
-          // Initialize total earned
-          let totalEarned = 0;
-          
-          // Try calculating earnings, handle with care due to complex queries
-          try {
-            // Calculate total earned from trips with completed matches
-            for (const tripDoc of tripsSnapshot.docs) {
-              try {
-                const matchesQuery = query(
-                  collection(db, "matches"),
-                  where("tripId", "==", tripDoc.id),
-                  where("status", "==", "completed")
-                );
-                const matchesSnapshot = await getDocs(matchesQuery);
-                
-                for (const matchDoc of matchesSnapshot.docs) {
-                  try {
-                    const matchData = matchDoc.data();
-                    
-                    const packageQuery = query(
-                      collection(db, "packages"),
-                      where("__name__", "==", matchData.packageId)
-                    );
-                    const packageSnapshot = await getDocs(packageQuery);
-                    
-                    if (!packageSnapshot.empty) {
-                      const packageData = packageSnapshot.docs[0].data();
-                      totalEarned += packageData.price || 0;
-                    }
-                  } catch (packageError) {
-                    console.error("Errore nel recupero dati pacchetto:", packageError);
-                    // Continue with next match
-                  }
-                }
-              } catch (matchError) {
-                console.error("Errore nel recupero match:", matchError);
-                // Continue with next trip
-              }
-            }
-          } catch (earningsError) {
-            console.error("Errore nel calcolo guadagni:", earningsError);
-            // Use 0 as fallback for earnings
-          }
-          
-          setStats({
-            packagesSent: packagesSnapshot.size,
-            tripsReported: tripsSnapshot.size,
-            totalEarned,
-            totalSpent
-          });
-        } catch (statsError) {
-          console.error("Errore nel recupero statistiche:", statsError);
-          setStats({
-            packagesSent: 0,
-            tripsReported: 0,
-            totalEarned: 0,
-            totalSpent: 0
-          });
-        }
+        setStats({
+          packagesSent: packagesSnapshot.size,
+          tripsReported: tripsSnapshot.size,
+          totalEarned,
+          totalSpent
+        });
         
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -205,7 +130,7 @@ export default function Profile() {
     };
 
     fetchData();
-  }, [currentUser, navigate, userProfile, toast]);
+  }, [currentUser, navigate, userProfile]);
 
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
@@ -214,183 +139,19 @@ export default function Profile() {
     
     try {
       if (userName.trim() && userName !== userProfile?.displayName) {
-        // Aggiorna il nome nell'autenticazione Firebase
         await updateProfile(currentUser, {
           displayName: userName.trim()
-        });
-        
-        // Aggiorna il nome nel profilo Firestore
-        const userQuery = query(
-          collection(db, "users"),
-          where("uid", "==", currentUser.uid)
-        );
-        const userSnapshot = await getDocs(userQuery);
-        
-        if (!userSnapshot.empty) {
-          // Aggiorna il documento esistente
-          const userDoc = userSnapshot.docs[0];
-          await updateDoc(doc(db, "users", userDoc.id), {
-            displayName: userName.trim()
-          });
-        } else {
-          // Crea un nuovo documento utente se non esiste
-          await addDoc(collection(db, "users"), {
-            uid: currentUser.uid,
-            displayName: userName.trim(),
-            createdAt: new Date().toISOString(),
-            rating: 0,
-            reviewCount: 0
-          });
-        }
-        
-        // Mostra un messaggio di conferma con toast
-        toast({
-          title: "Profilo aggiornato",
-          description: "Il tuo nome è stato salvato correttamente",
-          variant: "default"
         });
       }
       
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un problema durante il salvataggio del profilo",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Funzione semplificata per upload immagine
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !currentUser) return;
-    
-    event.target.value = "";
-    setIsUploadingImage(true);
-    
-    try {
-      // Verifica dimensione massima (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("L'immagine è troppo grande (max 5MB)");
-      }
-      
-      // Crea una copia locale dell'immagine usando l'object URL
-      const localPreviewUrl = URL.createObjectURL(file);
-      
-      // Aggiorna immediatamente l'interfaccia utente per feedback
-      const avatarImage = document.querySelector('.avatar-image') as HTMLImageElement;
-      if (avatarImage) {
-        avatarImage.src = localPreviewUrl;
-      }
-      
-      // Inizia il caricamento in background
-      const fileName = `profile_${currentUser.uid}_${Date.now()}`;
-      const storageRef = ref(storage, `profile_images/${fileName}`);
-      
-      // Carica il file
-      const uploadTask = uploadBytes(storageRef, file);
-      
-      // Prima mostra un messaggio che l'upload è iniziato
-      toast({
-        title: "Caricamento in corso",
-        description: "Stiamo caricando la tua immagine...",
-        variant: "default"
-      });
-      
-      // Gestisci il risultato del caricamento
-      uploadTask.then(async (snapshot) => {
-        try {
-          // Ottieni URL e aggiorna profilo
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          
-          // Aggiorna profilo autenticazione
-          await updateProfile(currentUser, { photoURL: downloadURL });
-          
-          // Aggiorna database Firestore
-          try {
-            const userQuery = query(
-              collection(db, "users"),
-              where("uid", "==", currentUser.uid)
-            );
-            const userSnapshot = await getDocs(userQuery);
-            
-            if (!userSnapshot.empty) {
-              const userDoc = userSnapshot.docs[0];
-              await updateDoc(doc(db, "users", userDoc.id), {
-                photoURL: downloadURL
-              });
-            } else {
-              await addDoc(collection(db, "users"), {
-                uid: currentUser.uid,
-                displayName: currentUser.displayName || "",
-                email: currentUser.email || "",
-                photoURL: downloadURL,
-                createdAt: new Date().toISOString(),
-                rating: 0,
-                reviewCount: 0
-              });
-            }
-          } catch (firestoreError) {
-            console.error("Errore Firestore:", firestoreError);
-            // Non far fallire l'operazione se Firestore fallisce
-          }
-          
-          // Conferma successo
-          toast({
-            title: "Immagine caricata",
-            description: "La tua immagine del profilo è stata aggiornata",
-            variant: "default"
-          });
-        } catch (error) {
-          console.error("Errore nel processo post-upload:", error);
-          toast({
-            title: "Errore",
-            description: "Problema nell'aggiornamento del profilo",
-            variant: "destructive"
-          });
-        } finally {
-          // Rilascia la memoria dell'object URL
-          URL.revokeObjectURL(localPreviewUrl);
-          setIsUploadingImage(false);
-        }
-      }).catch((error) => {
-        console.error("Errore caricamento:", error);
-        toast({
-          title: "Errore caricamento",
-          description: "Non è stato possibile caricare l'immagine",
-          variant: "destructive"
-        });
-        setIsUploadingImage(false);
-        
-        // Ripristina immagine precedente
-        if (avatarImage && currentUser.photoURL) {
-          avatarImage.src = currentUser.photoURL;
-        }
-        
-        // Rilascia la memoria dell'object URL
-        URL.revokeObjectURL(localPreviewUrl);
-      });
-    } catch (error: any) {
-      // Gestisce errori nelle verifiche iniziali
-      console.error("Errore preparazione:", error);
-      toast({
-        title: "Errore",
-        description: error.message || "Si è verificato un problema con l'immagine",
-        variant: "destructive"
-      });
-      setIsUploadingImage(false);
-    }
-  };
-  
-  // Funzione per aprire il selettore di file
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-  
   const handleLogout = async () => {
     const auth = getAuth();
     try {
@@ -416,96 +177,17 @@ export default function Profile() {
     }
   };
 
-  // Stato per gestire l'URL dell'indice Firestore
-  const [firestoreIndexUrl, setFirestoreIndexUrl] = useState<string | null>(null);
-
   return (
     <AppLayout>
       <div className="p-6">
-        {/* Banner per l'indice Firestore mancante */}
-        {firestoreIndexUrl && (
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6 rounded-md shadow-sm">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3 flex-1">
-                <h3 className="text-lg font-semibold text-orange-800">Indice Firestore necessario</h3>
-                <p className="text-orange-700 mb-2">
-                  Per visualizzare le recensioni è necessario creare un indice composito in Firestore.
-                </p>
-                <a 
-                  href={firestoreIndexUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                >
-                  Crea indice in Firestore
-                </a>
-                <p className="text-sm text-orange-600 mt-2">
-                  Dopo aver creato l'indice, ricarica questa pagina.
-                </p>
-              </div>
-              <button 
-                onClick={() => setFirestoreIndexUrl(null)} 
-                className="flex-shrink-0 ml-2 text-orange-500 hover:text-orange-700"
-              >
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      
         <h1 className="text-2xl font-bold text-neutral-900 mb-6">Profilo</h1>
 
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
           <div className="p-6 flex flex-col items-center">
-            <div className="relative group cursor-pointer" onClick={triggerFileInput}>
-              <Avatar className="w-24 h-24 mb-4 border-2 border-white">
-                <AvatarImage 
-                  src={currentUser?.photoURL || undefined} 
-                  alt={userName}
-                  className="object-cover avatar-image" 
-                />
-                <AvatarFallback className="bg-primary text-white text-xl font-semibold">
-                  {userName.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              
-              {/* Overlay con icona ed effetto al passaggio del mouse */}
-              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              
-              {/* Indicatore di caricamento */}
-              {isUploadingImage && (
-                <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-            </div>
-            
-            {/* Input file nascosto */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              className="hidden"
-              accept="image/*"
-              disabled={isUploadingImage}
-            />
-            
-            {/* Suggerimento per l'utente */}
-            <p className="text-xs text-neutral-500 mb-2 text-center">
-              Tocca l'immagine per caricare una foto
-            </p>
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+              <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
             
             {isEditing ? (
               <div className="w-full max-w-xs mb-4">
