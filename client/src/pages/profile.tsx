@@ -84,32 +84,55 @@ export default function Profile() {
           if (reviewError.code === 'failed-precondition' && reviewError.message.includes('index')) {
             console.log("Questo errore è dovuto alla mancanza di un indice in Firestore");
             
-            // Estrai l'URL per la creazione dell'indice dal messaggio di errore, se presente
+            // Creiamo un componente per mostrare l'errore di indice mancante
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'firestore-index-error p-4 mb-4 border border-orange-200 bg-orange-50 rounded-lg';
+            
+            // Estrai l'URL per la creazione dell'indice dal messaggio di errore
             const errorMsg = reviewError.message || "";
             const urlMatch = errorMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/);
             const indexUrl = urlMatch ? urlMatch[1] : null;
             
-            // Mostra l'errore completo nella console per facilitare il debugging
+            // Log per debug
             console.error("Messaggio completo dell'errore:", errorMsg);
             if (indexUrl) {
               console.log("URL per creare l'indice:", indexUrl);
-            }
-            
-            // Alert più dettagliato per mostrare il link all'utente
-            // Nota: in una versione di produzione, potresti voler implementare un componente UI dedicato
-            if (indexUrl) {
-              const confirmCreate = window.confirm(
-                "È necessario creare un indice in Firestore per visualizzare le recensioni. "+
-                "Vuoi aprire il link per crearlo ora? (Dopo aver creato l'indice, ricarica la pagina)"
-              );
-              if (confirmCreate) {
-                window.open(indexUrl, '_blank');
+              
+              // Creiamo il contenuto del messaggio di errore
+              errorDiv.innerHTML = `
+                <h3 class="text-lg font-semibold text-orange-800 mb-2">Indice Firestore necessario</h3>
+                <p class="mb-3 text-orange-700">Per visualizzare le recensioni, è necessario creare un indice in Firestore.</p>
+                <a href="${indexUrl}" target="_blank" rel="noopener noreferrer" 
+                   class="inline-block px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors">
+                  Crea indice in Firestore
+                </a>
+                <p class="mt-2 text-sm text-orange-600">Dopo aver creato l'indice, ricarica questa pagina.</p>
+              `;
+              
+              // Inseriamo il messaggio nella pagina
+              const reviewsContainer = document.querySelector('.reviews-container');
+              if (reviewsContainer) {
+                // Se è già presente un messaggio di errore, lo rimuoviamo
+                const existingError = reviewsContainer.querySelector('.firestore-index-error');
+                if (existingError) {
+                  existingError.remove();
+                }
+                
+                // Inseriamo il nuovo messaggio di errore
+                reviewsContainer.prepend(errorDiv);
+              } else {
+                // Se non troviamo il container delle recensioni, mostriamo un avviso standard
+                toast({
+                  title: "Indice Firestore mancante",
+                  description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni.",
+                  variant: "default",
+                });
               }
             } else {
               // Fallback se l'URL non viene trovato
               toast({
                 title: "Indice Firestore mancante",
-                description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni. Controlla la console per i dettagli.",
+                description: "È necessario creare un indice composito su Firestore per visualizzare le recensioni.",
                 variant: "default",
               });
             }
