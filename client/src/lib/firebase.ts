@@ -354,11 +354,15 @@ export const getUserProfile = async (userId: string) => {
       // Creiamo automaticamente un nuovo profilo utente in Firestore
       console.log(`Creazione automatica del profilo per l'utente ${userId} da Auth`);
       
+      // Generiamo un avatar basato sul nome
+      const userName = authUserData.displayName || `Utente`;
+      const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff&size=256`;
+      
       const userData = {
         uid: userId,
         displayName: authUserData.displayName || `Utente ${userId.slice(0, 6)}`,
         email: authUserData.email || "",
-        photoURL: authUserData.photoURL || "",
+        photoURL: authUserData.photoURL || defaultAvatarUrl,
         phoneNumber: authUserData.phoneNumber || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -383,9 +387,12 @@ export const getUserProfile = async (userId: string) => {
     
     // Se non abbiamo trovato dati da nessuna parte, creiamo un profilo minimale
     console.log(`Creazione profilo minimo per l'utente ${userId}`);
+    // Generiamo un avatar per default
+    const defaultAvatarUrl = `https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff&size=256`;
     const minimalUserData = {
       uid: userId,
       displayName: `Utente (${userId.slice(0, 6)})`,
+      photoURL: defaultAvatarUrl,
       createdAt: new Date().toISOString(),
       rating: 0,
       reviewCount: 0
