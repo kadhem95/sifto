@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
-import { allCities, formatCityDisplay } from "@/data/cities";
+import { LocationInput } from "@/components/ui/location-input";
 
 const packageFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di partenza"),
@@ -42,13 +42,21 @@ export default function SendPackage() {
   const [showToSuggestions, setShowToSuggestions] = useState(false);
   const toInputRef = useRef<HTMLDivElement>(null);
   
+  // Type per le città unificato per includere tutte le possibili proprietà
+  type City = {
+    name: string;
+    country: string;
+    province?: string | undefined;
+  };
+  
   // Funzione per filtrare i suggerimenti delle città
-  const filterCitySuggestions = (text: string) => {
+  const filterCitySuggestions = (text: string): City[] => {
     if (!text.trim()) {
       return [];
     }
     
-    return allCities
+    // Cast esplicito di allCities a City[] per evitare problemi di tipo
+    return (allCities as City[])
       .filter(city => {
         const cityName = city.name.toLowerCase();
         const cityProvince = city.province ? city.province.toLowerCase() : '';
@@ -85,7 +93,7 @@ export default function SendPackage() {
   };
   
   // Gestione selezione città di partenza
-  const selectFromCity = (city: {name: string; province?: string; country: string}) => {
+  const selectFromCity = (city: City) => {
     const cityDisplay = formatCityDisplay(city);
     setFromInputValue(cityDisplay);
     setValue("from", cityDisplay, { shouldValidate: true });
@@ -93,7 +101,7 @@ export default function SendPackage() {
   };
   
   // Gestione selezione città di destinazione
-  const selectToCity = (city: {name: string; province?: string; country: string}) => {
+  const selectToCity = (city: City) => {
     const cityDisplay = formatCityDisplay(city);
     setToInputValue(cityDisplay);
     setValue("to", cityDisplay, { shouldValidate: true });
@@ -117,20 +125,6 @@ export default function SendPackage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   
-  // Sincronizza i valori degli input con i valori del form
-  useEffect(() => {
-    const fromValue = watch("from");
-    const toValue = watch("to");
-    
-    if (fromValue && fromValue !== fromInputValue) {
-      setFromInputValue(fromValue);
-    }
-    
-    if (toValue && toValue !== toInputValue) {
-      setToInputValue(toValue);
-    }
-  }, [watch("from"), watch("to")]);
-
   const {
     register,
     handleSubmit,
@@ -148,6 +142,22 @@ export default function SendPackage() {
       price: 0,
     },
   });
+
+  // Sincronizza i valori degli input con i valori del form
+  const fromValue = watch("from");
+  const toValue = watch("to");
+  
+  useEffect(() => {
+    if (fromValue && fromValue !== fromInputValue) {
+      setFromInputValue(fromValue);
+    }
+  }, [fromValue, fromInputValue]);
+  
+  useEffect(() => {
+    if (toValue && toValue !== toInputValue) {
+      setToInputValue(toValue);
+    }
+  }, [toValue, toInputValue]);
   
   const handleSizeSelect = (size: string) => {
     setSelectedSize(size);
@@ -227,120 +237,28 @@ export default function SendPackage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Località di partenza */}
+          {/* Località di partenza con autocompletamento */}
           <div className="mb-4">
-            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
-            <div className="relative">
-              <div ref={fromInputRef}>
-                <Input
-                  id="from"
-                  type="text"
-                  className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-                  placeholder="es. Milano"
-                  value={fromInputValue}
-                  onChange={handleFromInputChange}
-                  onFocus={() => setShowFromSuggestions(true)}
-                  autoComplete="off"
-                />
-                
-                {showFromSuggestions && fromSuggestions.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
-                    {fromSuggestions.map((city, index) => (
-                      <div
-                        key={index}
-                        className="px-4 py-3 cursor-pointer hover:bg-neutral-100 transition-colors flex items-center"
-                        onClick={() => selectFromCity(city)}
-                      >
-                        <div className="mr-2 text-neutral-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                        <div className="font-medium flex-1">{formatCityDisplay(city)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="absolute right-3 top-3">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-neutral-500"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-              
-              {errors.from && (
-                <p className="text-red-500 text-sm mt-1">{errors.from.message}</p>
-              )}
-            </div>
+            <LocationInput
+              id="from"
+              label="Da"
+              placeholder="Seleziona la città di partenza"
+              value={watch("from")}
+              onChange={(value) => setValue("from", value, { shouldValidate: true })}
+              error={errors.from?.message}
+            />
           </div>
 
-          {/* Località di destinazione */}
+          {/* Località di destinazione con autocompletamento */}
           <div className="mb-4">
-            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
-            <div className="relative">
-              <div ref={toInputRef}>
-                <Input
-                  id="to"
-                  type="text"
-                  className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-                  placeholder="es. Tunisi"
-                  value={toInputValue}
-                  onChange={handleToInputChange}
-                  onFocus={() => setShowToSuggestions(true)}
-                  autoComplete="off"
-                />
-                
-                {showToSuggestions && toSuggestions.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
-                    {toSuggestions.map((city, index) => (
-                      <div
-                        key={index}
-                        className="px-4 py-3 cursor-pointer hover:bg-neutral-100 transition-colors flex items-center"
-                        onClick={() => selectToCity(city)}
-                      >
-                        <div className="mr-2 text-neutral-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                        <div className="font-medium flex-1">{formatCityDisplay(city)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="absolute right-3 top-3">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-neutral-500"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-              
-              {errors.to && (
-                <p className="text-red-500 text-sm mt-1">{errors.to.message}</p>
-              )}
-            </div>
+            <LocationInput
+              id="to"
+              label="A"
+              placeholder="Seleziona la città di destinazione"
+              value={watch("to")}
+              onChange={(value) => setValue("to", value, { shouldValidate: true })}
+              error={errors.to?.message}
+            />
           </div>
 
           {/* Data di consegna */}
