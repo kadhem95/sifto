@@ -298,7 +298,7 @@ export default function ChatList() {
                     <Avatar className="h-12 w-12 mr-3 border border-neutral-200 shadow-sm">
                       {chat.otherUser.photoURL ? (
                         <AvatarImage 
-                          src={`${chat.otherUser.photoURL}?t=${Date.now()}`}
+                          src={chat.otherUser.photoURL}
                           alt={`Foto di ${chat.otherUser.name.split(' ')[0]}`}
                           className="object-cover"
                           onError={(e) => {

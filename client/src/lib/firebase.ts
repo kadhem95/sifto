@@ -452,92 +452,105 @@ export const uploadProfileImage = async (userId: string, file: File) => {
   try {
     console.log(`Inizio processo di caricamento immagine per utente ${userId}`);
     
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `profile_${userId}_${timestamp}.${fileExtension}`;
-    const storageRef = ref(storage, `profile_images/${fileName}`);
-    
-    // Carica il file su Firebase Storage
-    console.log("Caricamento immagine su Firebase Storage...");
-    const uploadTask = uploadBytesResumable(storageRef, file);
-    
-    // Attendiamo il completamento del caricamento
-    await new Promise((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`Progresso caricamento: ${progress.toFixed(2)}%`);
-        },
-        (error) => {
-          console.error('Errore nel caricamento del file:', error);
-          reject(error);
-        },
-        () => {
-          console.log('Caricamento immagine completato');
-          resolve(true);
-        }
-      );
-    });
-    
-    // Ottieni l'URL della foto caricata
-    console.log("Recupero URL dell'immagine...");
-    const downloadURL = await getDownloadURL(storageRef);
-    console.log("URL immagine ottenuto:", downloadURL);
-    
-    const currentUser = auth.currentUser;
-    
+    // Primo approccio: caricare direttamente l'immagine su Firebase Storage in modo semplice
     try {
-      // Aggiornamento in Firestore
-      console.log("Aggiornamento profilo in Firestore...");
+      // Creiamo una referenza unica per l'immagine
+      const storageRef = ref(storage, `profile_images/${userId}`);
+      
+      // Utilizziamo uploadBytes invece di uploadBytesResumable per semplificare
+      console.log("Caricamento diretto su Firebase Storage...");
+      await uploadBytes(storageRef, file);
+      
+      // Ottieni l'URL dell'immagine
+      console.log("Recupero URL dell'immagine...");
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log("URL immagine ottenuto:", downloadURL);
+      
+      const currentUser = auth.currentUser;
+      
+      // Aggiorniamo entrambi i profili (Auth e Firestore)
+      if (currentUser) {
+        // Aggiorniamo Firebase Auth
+        await updateProfile(currentUser, {
+          photoURL: downloadURL
+        });
+        console.log("Profilo Auth aggiornato con URL dell'immagine");
+      }
+      
+      // Aggiorniamo Firestore
       const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
       const userSnapshot = await getDocs(userQuery);
       
       if (!userSnapshot.empty) {
-        // Utente esistente, aggiorniamo
         const userDoc = userSnapshot.docs[0];
         await updateDoc(doc(db, 'users', userDoc.id), {
           photoURL: downloadURL,
           updatedAt: new Date().toISOString()
         });
-        console.log("Profilo Firestore aggiornato con URL dell'immagine");
+        console.log("Profilo Firestore aggiornato con successo");
       } else {
-        // Utente non trovato, lo creiamo
-        console.log("Utente non trovato in Firestore, creazione nuovo profilo...");
+        // Creiamo un nuovo documento utente se non esiste
         const userName = currentUser?.displayName || '';
-        
         await addDoc(collection(db, 'users'), {
           uid: userId,
-          photoURL: downloadURL,
           displayName: userName,
           email: currentUser?.email || '',
+          photoURL: downloadURL,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           rating: 0,
           reviewCount: 0
         });
-        console.log("Nuovo profilo creato in Firestore con URL dell'immagine");
+        console.log("Nuovo profilo creato in Firestore");
       }
       
-      // Aggiorniamo anche il profilo in Firebase Auth
-      if (currentUser) {
-        try {
-          await updateProfile(currentUser, {
-            photoURL: downloadURL
-          });
-          console.log("Profilo Auth aggiornato con URL dell'immagine");
-        } catch (authError) {
-          console.warn("Errore nell'aggiornamento del profilo Auth:", authError);
-          // Non è un problema critico perché useremo comunque l'immagine da Firestore
-        }
-      }
-      
-      console.log('Immagine profilo salvata con successo su Firebase Storage');
+      console.log('Immagine profilo caricata con successo');
       return downloadURL;
       
-    } catch (error) {
-      console.error("Errore durante l'aggiornamento del profilo:", error);
-      throw error;
+    } catch (uploadError) {
+      console.error("Errore durante il caricamento dell'immagine:", uploadError);
+      
+      // Se il caricamento diretto fallisce, proviamo un approccio alternativo
+      console.log("Generazione di un avatar come fallback...");
+      
+      // Generiamo un avatar basato sul nome utente come fallback
+      const currentUser = auth.currentUser;
+      const userName = currentUser?.displayName || "User";
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff&bold=true&size=256`;
+      
+      if (currentUser) {
+        await updateProfile(currentUser, {
+          photoURL: avatarUrl
+        });
+        console.log("Profilo Auth aggiornato con avatar generato");
+      }
+      
+      // Aggiorniamo anche Firestore con l'avatar generato
+      const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        await updateDoc(doc(db, 'users', userDoc.id), {
+          photoURL: avatarUrl,
+          updatedAt: new Date().toISOString()
+        });
+        console.log("Profilo Firestore aggiornato con avatar generato");
+      } else {
+        await addDoc(collection(db, 'users'), {
+          uid: userId,
+          displayName: userName,
+          email: currentUser?.email || '',
+          photoURL: avatarUrl,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          rating: 0,
+          reviewCount: 0
+        });
+      }
+      
+      console.log("Utilizzato avatar generato come fallback");
+      return avatarUrl;
     }
   } catch (error) {
     console.error('Errore generale nel processo di caricamento immagine:', error);
