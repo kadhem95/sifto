@@ -279,38 +279,44 @@ export default function Profile() {
       
       console.log("Caricamento immagine di profilo:", file.name);
       
-      // Utilizziamo la funzione uploadProfileImage da firebase.ts
       try {
-        // Creiamo un riferimento a Firebase Storage
-        const storageRef = ref(storage, `profile_images/${currentUser.uid}_${Date.now()}`);
+        // Creiamo un nome di file univoco con timestamp
+        const timestamp = Date.now();
+        const filename = `profile_${currentUser.uid}_${timestamp}`;
         
-        // Upload del file
+        // Upload dell'immagine su Firebase Storage
+        console.log("Creazione riferimento a Firebase Storage...");
+        const storageRef = ref(storage, `profile_images/${filename}`);
+        
         console.log("Inizio upload su Firebase Storage...");
         await uploadBytes(storageRef, file);
-        console.log("Upload completato, recupero URL pubblico...");
         
-        // Otteniamo l'URL pubblico dell'immagine
+        console.log("Recupero URL dell'immagine...");
         const downloadURL = await getDownloadURL(storageRef);
         console.log("URL immagine ottenuto:", downloadURL);
         
         // Aggiorniamo Firebase Auth
+        console.log("Aggiornamento profilo in Firebase Auth...");
         await updateProfile(currentUser, {
           photoURL: downloadURL
         });
         console.log("Profilo Auth aggiornato con la nuova immagine");
         
         // Aggiorniamo anche Firestore
+        console.log("Aggiornamento profilo in Firestore...");
         const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
         const userSnapshot = await getDocs(userQuery);
         
         if (!userSnapshot.empty) {
           const userDoc = userSnapshot.docs[0];
+          console.log(`Aggiornamento documento esistente: ${userDoc.id}`);
           await updateDoc(doc(db, 'users', userDoc.id), {
             photoURL: downloadURL,
             updatedAt: new Date().toISOString()
           });
           console.log("Profilo Firestore aggiornato con la nuova immagine");
         } else {
+          console.log("Creazione nuovo profilo utente in Firestore...");
           await addDoc(collection(db, 'users'), {
             uid: currentUser.uid,
             displayName: userName,
