@@ -49,12 +49,27 @@ export default function MyShipments() {
     try {
       setIsDeleting(true);
       
-      // Elimina il viaggio su Firebase
-      const tripRef = doc(db, "trips", tripId);
-      await deleteDoc(tripRef);
+      // Verifica se ci sono match associati a questo viaggio
+      const matchesQuery = query(
+        collection(db, "matches"),
+        where("tripId", "==", tripId)
+      );
+      const matchesSnapshot = await getDocs(matchesQuery);
       
-      // Aggiorna la lista dei viaggi
-      setShipments(prev => prev.filter(shipment => shipment.id !== tripId));
+      if (!matchesSnapshot.empty) {
+        toast({
+          title: "Impossibile eliminare",
+          description: "Questo viaggio ha già dei pacchi associati e non può essere eliminato.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Se non ci sono match, procedi con l'eliminazione
+      await deleteDoc(doc(db, "trips", tripId));
+      
+      // Aggiorna la lista rimuovendo il viaggio eliminato
+      setShipments(shipments.filter(s => !(s.type === "trip" && s.id === tripId)));
       
       toast({
         title: "Viaggio eliminato",
@@ -72,193 +87,246 @@ export default function MyShipments() {
       setIsDeleting(false);
     }
   };
-
+  
+  // Funzione per eliminare un pacco
+  const deletePackage = async (packageId: string) => {
+    if (isDeleting) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // Verifica se ci sono match associati a questo pacco
+      const matchesQuery = query(
+        collection(db, "matches"),
+        where("packageId", "==", packageId)
+      );
+      const matchesSnapshot = await getDocs(matchesQuery);
+      
+      if (!matchesSnapshot.empty) {
+        toast({
+          title: "Impossibile eliminare",
+          description: "Questo pacco è già stato accettato da un viaggiatore e non può essere eliminato.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Se non ci sono match, procedi con l'eliminazione
+      await deleteDoc(doc(db, "packages", packageId));
+      
+      // Aggiorna la lista rimuovendo il pacco eliminato
+      setShipments(shipments.filter(s => !(s.type === "package" && s.id === packageId)));
+      
+      toast({
+        title: "Pacco eliminato",
+        description: "Il pacco è stato eliminato con successo",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Errore durante l'eliminazione del pacco:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'eliminazione del pacco",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
+  // Effetto per caricare i dati delle spedizioni
   useEffect(() => {
     const fetchShipments = async () => {
       if (!currentUser) {
         navigate("/login");
         return;
       }
-
+      
       setIsLoading(true);
-
+      const shipmentsData: ShipmentData[] = [];
+      
       try {
-        const allShipments: ShipmentData[] = [];
-        
-        // Fetch packages
+        // 1. Recupera i pacchi dell'utente
         const packagesQuery = query(
           collection(db, "packages"),
           where("userId", "==", currentUser.uid)
         );
         const packagesSnapshot = await getDocs(packagesQuery);
         
-        // Convert packages to shipment format
-        const packagePromises = packagesSnapshot.docs.map(async (packageDoc) => {
+        for (const packageDoc of packagesSnapshot.docs) {
           const packageData = packageDoc.data();
           
-          // Get match data if any
+          // Verifica se il pacco ha un match
           const matchesQuery = query(
             collection(db, "matches"),
             where("packageId", "==", packageDoc.id)
           );
           const matchesSnapshot = await getDocs(matchesQuery);
           
-          let counterpart;
-          let status: "pending" | "in_progress" | "completed" = "pending";
+          let counterpart = undefined;
           
           if (!matchesSnapshot.empty) {
             const matchData = matchesSnapshot.docs[0].data();
-            status = matchData.status === "accepted" ? "in_progress" : 
-                    matchData.status === "completed" ? "completed" : "pending";
             
-            // Get traveler data
-            const tripQuery = query(
-              collection(db, "trips"),
-              where("__name__", "==", matchData.tripId)
+            // Recupera i dati del viaggiatore
+            const travelersQuery = query(
+              collection(db, "users"),
+              where("uid", "==", matchData.travelerId)
             );
-            const tripSnapshot = await getDocs(tripQuery);
+            const travelersSnapshot = await getDocs(travelersQuery);
             
-            if (!tripSnapshot.empty) {
-              const tripData = tripSnapshot.docs[0].data();
+            if (!travelersSnapshot.empty) {
+              const travelerData = travelersSnapshot.docs[0].data();
               
-              // Get traveler user info
-              const userQuery = query(
-                collection(db, "users"),
-                where("uid", "==", tripData.userId)
+              // Verifica se l'utente ha già lasciato una recensione
+              const reviewsQuery = query(
+                collection(db, "reviews"),
+                where("userId", "==", currentUser.uid),
+                where("subjectId", "==", matchData.travelerId),
+                where("packageId", "==", packageDoc.id)
               );
-              const userSnapshot = await getDocs(userQuery);
+              const reviewsSnapshot = await getDocs(reviewsQuery);
               
-              if (!userSnapshot.empty) {
-                const userData = userSnapshot.docs[0].data();
-                
-                // Check if reviewed
-                const reviewsQuery = query(
-                  collection(db, "reviews"),
-                  where("senderId", "==", currentUser.uid),
-                  where("receiverId", "==", userData.uid),
-                  where("packageId", "==", packageDoc.id)
-                );
-                const reviewsSnapshot = await getDocs(reviewsQuery);
-                
-                counterpart = {
-                  id: userData.uid,
-                  name: userData.displayName || "Unknown",
-                  photoURL: userData.photoURL,
-                  reviewed: !reviewsSnapshot.empty,
-                  price: packageData.price
-                };
-              }
+              counterpart = {
+                id: matchData.travelerId,
+                name: travelerData.displayName || "Viaggiatore",
+                photoURL: travelerData.photoURL,
+                reviewed: !reviewsSnapshot.empty,
+                rating: travelerData.rating || 0
+              };
             }
           }
           
-          return {
+          shipmentsData.push({
             id: packageDoc.id,
-            type: "package" as const,
+            type: "package",
             from: packageData.from,
             to: packageData.to,
             date: packageData.deadline,
-            status,
+            status: packageData.status,
             counterpart
-          };
-        });
+          });
+        }
         
-        const packagesData = await Promise.all(packagePromises);
-        allShipments.push(...packagesData);
-        
-        // Fetch trips
+        // 2. Recupera i viaggi dell'utente
         const tripsQuery = query(
           collection(db, "trips"),
           where("userId", "==", currentUser.uid)
         );
         const tripsSnapshot = await getDocs(tripsQuery);
         
-        // Convert trips to shipment format
-        const tripPromises = tripsSnapshot.docs.map(async (tripDoc) => {
+        for (const tripDoc of tripsSnapshot.docs) {
           const tripData = tripDoc.data();
           
-          // Get match data if any
+          // Verifica se il viaggio ha match
           const matchesQuery = query(
             collection(db, "matches"),
             where("tripId", "==", tripDoc.id)
           );
           const matchesSnapshot = await getDocs(matchesQuery);
           
-          let counterpart;
-          let status: "pending" | "in_progress" | "completed" = "active" === tripData.status ? "pending" : "completed";
+          let counterparts = [];
           
-          if (!matchesSnapshot.empty) {
-            const matchData = matchesSnapshot.docs[0].data();
-            status = matchData.status === "accepted" ? "in_progress" : 
-                    matchData.status === "completed" ? "completed" : "pending";
+          for (const matchDoc of matchesSnapshot.docs) {
+            const matchData = matchDoc.data();
             
-            // Get package data
-            const packageQuery = query(
-              collection(db, "packages"),
-              where("__name__", "==", matchData.packageId)
+            // Recupera i dati del mittente del pacco
+            const packageOwnersQuery = query(
+              collection(db, "users"),
+              where("uid", "==", matchData.packageOwnerId)
             );
-            const packageSnapshot = await getDocs(packageQuery);
+            const packageOwnersSnapshot = await getDocs(packageOwnersQuery);
             
-            if (!packageSnapshot.empty) {
-              const packageData = packageSnapshot.docs[0].data();
+            if (!packageOwnersSnapshot.empty) {
+              const packageOwnerData = packageOwnersSnapshot.docs[0].data();
               
-              // Get package sender info
-              const userQuery = query(
-                collection(db, "users"),
-                where("uid", "==", packageData.userId)
+              // Recupera i dettagli del pacco
+              const packageQuery = query(
+                collection(db, "packages"),
+                where("id", "==", matchData.packageId)
               );
-              const userSnapshot = await getDocs(userQuery);
+              const packageSnapshot = await getDocs(packageQuery);
+              let packagePrice = 0;
               
-              if (!userSnapshot.empty) {
-                const userData = userSnapshot.docs[0].data();
-                
-                // Check if reviewed
-                const reviewsQuery = query(
-                  collection(db, "reviews"),
-                  where("senderId", "==", currentUser.uid),
-                  where("receiverId", "==", userData.uid),
-                  where("tripId", "==", tripDoc.id)
-                );
-                const reviewsSnapshot = await getDocs(reviewsQuery);
-                
-                counterpart = {
-                  id: userData.uid,
-                  name: userData.displayName || "Unknown",
-                  photoURL: userData.photoURL,
-                  reviewed: !reviewsSnapshot.empty,
-                  price: packageData.price
-                };
+              if (!packageSnapshot.empty) {
+                const packageData = packageSnapshot.docs[0].data();
+                packagePrice = packageData.price || 0;
               }
+              
+              // Verifica se l'utente ha già lasciato una recensione
+              const reviewsQuery = query(
+                collection(db, "reviews"),
+                where("userId", "==", currentUser.uid),
+                where("subjectId", "==", matchData.packageOwnerId),
+                where("tripId", "==", tripDoc.id)
+              );
+              const reviewsSnapshot = await getDocs(reviewsQuery);
+              
+              counterparts.push({
+                id: matchData.packageOwnerId,
+                name: packageOwnerData.displayName || "Utente",
+                photoURL: packageOwnerData.photoURL,
+                reviewed: !reviewsSnapshot.empty,
+                price: packagePrice,
+                rating: packageOwnerData.rating || 0
+              });
             }
           }
           
-          return {
-            id: tripDoc.id,
-            type: "trip" as const,
-            from: tripData.from,
-            to: tripData.to,
-            date: tripData.date,
-            status,
-            counterpart
-          };
-        });
+          if (counterparts.length > 0) {
+            // Se ci sono più match, crea una voce per ciascuno
+            for (const counterpart of counterparts) {
+              shipmentsData.push({
+                id: tripDoc.id,
+                type: "trip",
+                from: tripData.from,
+                to: tripData.to,
+                date: tripData.date,
+                status: tripData.status,
+                counterpart
+              });
+            }
+          } else {
+            // Se non ci sono match, crea una voce senza controparte
+            shipmentsData.push({
+              id: tripDoc.id,
+              type: "trip",
+              from: tripData.from,
+              to: tripData.to,
+              date: tripData.date,
+              status: tripData.status
+            });
+          }
+        }
         
-        const tripsData = await Promise.all(tripPromises);
-        allShipments.push(...tripsData);
+        // Ordina le spedizioni per data (più recenti prima)
+        shipmentsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
-        // Sort by date (most recent first)
-        allShipments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        setShipments(allShipments);
+        setShipments(shipmentsData);
       } catch (error) {
-        console.error("Error fetching shipments:", error);
+        console.error("Errore durante il recupero delle spedizioni:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante il caricamento delle tue attività",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchShipments();
-  }, [currentUser, navigate]);
-
+  }, [currentUser, navigate, toast]);
+  
+  // Filtra le spedizioni in base al tipo e allo stato
+  const myPackages = shipments.filter(s => s.type === "package");
+  const myTrips = shipments.filter(s => s.type === "trip");
+  
+  // Raggruppa per stato
+  const pendingShipments = shipments.filter(s => s.status === "pending");
+  const inProgressShipments = shipments.filter(s => s.status === "in_progress");
+  const completedShipments = shipments.filter(s => s.status === "completed");
+  
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString("it-IT", {
@@ -270,434 +338,499 @@ export default function MyShipments() {
       return dateString;
     }
   };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <div className="bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full text-sm font-medium">In attesa</div>;
-      case "in_progress":
-        return <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">In corso</div>;
-      case "completed":
-        return <div className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-sm font-medium">Completato</div>;
-      default:
-        return null;
-    }
-  };
-
-  const handleOpenChat = (counterpartId: string) => {
-    // Navigate to the chat with counterpart
-    navigate(`/chat/${counterpartId}`);
-  };
-
-  const handleLeaveReview = (shipmentId: string, counterpartId: string) => {
-    // Navigate to the review page for the counterpart
-    navigate(`/review/${counterpartId}?shipmentId=${shipmentId}&type=${activeTab}`);
-  };
   
-  // Funzione per eliminare un pacco
-  const handleDeletePackage = async (packageId: string) => {
-    if (window.confirm("Sei sicuro di voler eliminare questo pacco?")) {
-      setIsDeleting(true);
-      try {
-        // Verifica se ci sono dei match associati al pacco
-        const matchesQuery = query(
-          collection(db, "matches"),
-          where("packageId", "==", packageId)
-        );
-        const matchesSnapshot = await getDocs(matchesQuery);
-        
-        // Elimina tutti i match associati
-        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => 
-          deleteDoc(doc(db, "matches", matchDoc.id))
-        );
-        await Promise.all(deleteMatchPromises);
-        
-        // Elimina il pacco
-        await deleteDoc(doc(db, "packages", packageId));
-        
-        // Aggiorna la lista dei pacchi rimuovendo quello eliminato
-        setShipments(shipments.filter(s => !(s.id === packageId && s.type === "package")));
-        
-        toast({
-          title: "Pacco eliminato",
-          description: "Il pacco è stato eliminato con successo.",
-          variant: "default"
-        });
-      } catch (error) {
-        console.error("Errore durante l'eliminazione del pacco:", error);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante l'eliminazione del pacco.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-  
-  // Funzione per eliminare un viaggio
-  const handleDeleteTrip = async (tripId: string) => {
-    if (window.confirm("Sei sicuro di voler eliminare questo viaggio?")) {
-      setIsDeleting(true);
-      try {
-        // Verifica se ci sono dei match associati al viaggio
-        const matchesQuery = query(
-          collection(db, "matches"),
-          where("tripId", "==", tripId)
-        );
-        const matchesSnapshot = await getDocs(matchesQuery);
-        
-        // Elimina tutti i match associati
-        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => 
-          deleteDoc(doc(db, "matches", matchDoc.id))
-        );
-        await Promise.all(deleteMatchPromises);
-        
-        // Elimina il viaggio
-        await deleteDoc(doc(db, "trips", tripId));
-        
-        // Aggiorna la lista dei viaggi rimuovendo quello eliminato
-        setShipments(shipments.filter(s => !(s.id === tripId && s.type === "trip")));
-        
-        toast({
-          title: "Viaggio eliminato",
-          description: "Il viaggio è stato eliminato con successo.",
-          variant: "default"
-        });
-      } catch (error) {
-        console.error("Errore durante l'eliminazione del viaggio:", error);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante l'eliminazione del viaggio.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-
-  const filteredShipments = shipments.filter((shipment) => 
-    (activeTab === "packages" && shipment.type === "package") || 
-    (activeTab === "trips" && shipment.type === "trip")
-  );
-
-  const activeShipments = filteredShipments.filter((shipment) => 
-    shipment.status === "pending" || shipment.status === "in_progress"
-  );
-
-  const completedShipments = filteredShipments.filter((shipment) => 
-    shipment.status === "completed"
-  );
-
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="p-6 flex justify-center items-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-neutral-500">Caricamento attività in corso...</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
   return (
     <AppLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Le mie attività</h1>
-
+        <h1 className="text-2xl font-bold mb-6">Le mie attività</h1>
+        
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "packages" | "trips")}>
-          <TabsList className="flex w-full mb-4 border-b border-neutral-200 bg-transparent">
-            <TabsTrigger 
-              value="packages" 
-              className="flex-1 py-2 px-4 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
+          <TabsList className="w-full mb-6">
+            <TabsTrigger value="packages" className="flex-1">
               I miei pacchi
+              {myPackages.length > 0 && (
+                <span className="ml-2 bg-neutral-200 text-neutral-800 px-2 py-0.5 rounded-full text-xs">
+                  {myPackages.length}
+                </span>
+              )}
             </TabsTrigger>
-            <TabsTrigger 
-              value="trips" 
-              className="flex-1 py-2 px-4 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
+            <TabsTrigger value="trips" className="flex-1">
               I miei viaggi
+              {myTrips.length > 0 && (
+                <span className="ml-2 bg-neutral-200 text-neutral-800 px-2 py-0.5 rounded-full text-xs">
+                  {myTrips.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="packages" className="mt-0">
-            {activeShipments.length > 0 && (
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Active</h2>
-                
-                {activeShipments.map((shipment) => (
-                  <div key={shipment.id} className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4">
-                    <div className="p-4">
-                      <div 
-                        className="flex justify-between items-center mb-3 cursor-pointer"
-                        onClick={() => navigate(`/package-details/${shipment.id}`)}
-                      >
-                        <div>
-                          <p className="text-neutral-900 font-medium">{shipment.from} → {shipment.to}</p>
-                          <p className="text-sm text-neutral-500">entro il {formatDate(shipment.date)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(shipment.status)}
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2 mb-2">
-                        <button 
-                          className="p-2 text-neutral-500 hover:text-primary transition-colors"
-                          onClick={() => navigate(`/edit-package/${shipment.id}`)}
-                          aria-label="Modifica"
+          <TabsContent value="packages">
+            {isLoading ? (
+              <div className="flex justify-center items-center min-h-[300px]">
+                <div className="text-center">
+                  <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-neutral-500">Caricamento in corso...</p>
+                </div>
+              </div>
+            ) : myPackages.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="bg-neutral-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-neutral-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2">Nessun pacco</h3>
+                <p className="text-neutral-500 max-w-xs mx-auto mb-6">
+                  Non hai ancora creato nessuna richiesta di spedizione. Inizia a inviare i tuoi pacchi!
+                </p>
+                <Button onClick={() => navigate("/send-package")} className="bg-primary text-white">
+                  Invia un pacco
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {pendingShipments.filter(s => s.type === "package").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">In attesa di un viaggiatore</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {pendingShipments.filter(s => s.type === "package").map((shipment) => (
+                        <div
+                          key={`package-${shipment.id}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                        <button 
-                          className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePackage(shipment.id);
-                          }}
-                          aria-label="Elimina"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                          </svg>
-                        </button>
-                      </div>
-
-                      {shipment.counterpart && (
-                        <div className="flex items-center py-2 border-t border-neutral-200">
-                          <div className="flex items-center">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={shipment.counterpart.photoURL} alt={shipment.counterpart.name} />
-                              <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Trasportato da {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ offerti</p>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Entro il {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                              In attesa
                             </div>
                           </div>
-                          <Button
-                            onClick={() => handleOpenChat(shipment.counterpart!.id)}
-                            className="ml-auto bg-primary text-white rounded-lg px-3 py-1 text-sm font-medium h-auto"
-                          >
-                            Chat
-                          </Button>
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => navigate(`/package-details/${shipment.id}`)}
+                                variant="outline"
+                                className="text-sm h-9"
+                              >
+                                Vedi dettagli
+                              </Button>
+                              <Button
+                                onClick={() => navigate(`/edit-package/${shipment.id}`)}
+                                variant="outline"
+                                className="text-sm h-9"
+                              >
+                                Modifica
+                              </Button>
+                            </div>
+                            <Button
+                              onClick={() => deletePackage(shipment.id)}
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700 text-sm h-9"
+                              disabled={isDeleting}
+                            >
+                              Elimina
+                            </Button>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {completedShipments.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Completed</h2>
+                )}
                 
-                {completedShipments.map((shipment) => (
-                  <div key={shipment.id} className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4">
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div>
-                          <p className="text-neutral-900 font-medium">{shipment.from} → {shipment.to}</p>
-                          <p className="text-sm text-neutral-500">{formatDate(shipment.date)}</p>
-                        </div>
-                        {getStatusBadge(shipment.status)}
-                      </div>
-
-                      {shipment.counterpart && (
-                        <div className="flex items-center py-2 border-t border-neutral-200">
-                          <div className="flex items-center">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={shipment.counterpart.photoURL} alt={shipment.counterpart.name} />
-                              <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Trasportato da {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ pagati</p>
+                {inProgressShipments.filter(s => s.type === "package").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">In consegna</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {inProgressShipments.filter(s => s.type === "package").map((shipment) => (
+                        <div
+                          key={`package-${shipment.id}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Entro il {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                              In consegna
                             </div>
                           </div>
-                          <div className="ml-auto">
-                            {shipment.counterpart.reviewed ? (
-                              <div className="text-yellow-400 flex">
-                                <Rating value={shipment.counterpart.rating || 5} readOnly size="sm" />
+                          
+                          {shipment.counterpart && (
+                            <div className="flex items-center mt-4 p-3 bg-neutral-50 rounded-lg">
+                              <Avatar className="h-10 w-10 mr-3">
+                                {shipment.counterpart.photoURL ? (
+                                  <AvatarImage src={shipment.counterpart.photoURL} />
+                                ) : (
+                                  <AvatarFallback>
+                                    {shipment.counterpart.name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{shipment.counterpart.name}</p>
+                                <div className="flex items-center">
+                                  <Rating value={shipment.counterpart.rating || 0} readOnly />
+                                  <span className="text-xs text-neutral-500 ml-1">
+                                    {shipment.counterpart.rating?.toFixed(1) || "N/A"}
+                                  </span>
+                                </div>
                               </div>
-                            ) : (
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <Button
+                              onClick={() => navigate(`/package-details/${shipment.id}`)}
+                              variant="outline"
+                              className="text-sm h-9"
+                            >
+                              Vedi dettagli
+                            </Button>
+                            
+                            {shipment.counterpart && (
                               <Button
-                                onClick={() => handleLeaveReview(shipment.id, shipment.counterpart!.id)}
-                                className="border border-neutral-300 text-neutral-700 rounded-lg px-3 py-1 text-sm font-medium h-auto"
+                                onClick={() => {
+                                  // Trova la chat room tra l'utente e il viaggiatore
+                                  navigate(`/chat/${shipment.counterpart?.id}`);
+                                }}
+                                className="bg-primary text-white text-sm h-9"
                               >
-                                Review
+                                Chatta
                               </Button>
                             )}
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {filteredShipments.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-neutral-500">Non hai ancora nessun pacco</p>
-                <Button
-                  onClick={() => navigate("/send-package")}
-                  className="mt-4 bg-primary text-white"
-                >
-                  Invia un pacco
-                </Button>
+                )}
+                
+                {completedShipments.filter(s => s.type === "package").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Completati</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {completedShipments.filter(s => s.type === "package").map((shipment) => (
+                        <div
+                          key={`package-${shipment.id}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Consegnato il {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">
+                              Completato
+                            </div>
+                          </div>
+                          
+                          {shipment.counterpart && (
+                            <div className="flex items-center mt-4 p-3 bg-neutral-50 rounded-lg">
+                              <Avatar className="h-10 w-10 mr-3">
+                                {shipment.counterpart.photoURL ? (
+                                  <AvatarImage src={shipment.counterpart.photoURL} />
+                                ) : (
+                                  <AvatarFallback>
+                                    {shipment.counterpart.name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{shipment.counterpart.name}</p>
+                                <div className="flex items-center">
+                                  <Rating value={shipment.counterpart.rating || 0} readOnly />
+                                  <span className="text-xs text-neutral-500 ml-1">
+                                    {shipment.counterpart.rating?.toFixed(1) || "N/A"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <Button
+                              onClick={() => navigate(`/package-details/${shipment.id}`)}
+                              variant="outline"
+                              className="text-sm h-9"
+                            >
+                              Vedi dettagli
+                            </Button>
+                            
+                            {shipment.counterpart && !shipment.counterpart.reviewed && (
+                              <Button
+                                onClick={() => navigate(`/review/${shipment.id}?type=package`)}
+                                className="bg-primary text-white text-sm h-9"
+                              >
+                                Lascia recensione
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
           
-          <TabsContent value="trips" className="mt-0">
-            {activeShipments.length > 0 && (
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Attivi</h2>
-                
-                {activeShipments.map((shipment) => (
-                  <div key={shipment.id} className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4">
-                    <div className="p-4">
-                      <div 
-                        className="flex justify-between items-center mb-3 cursor-pointer"
-                        onClick={() => navigate(`/trip-details/${shipment.id}`)}
-                      >
-                        <div>
-                          <p className="text-neutral-900 font-medium">{shipment.from} → {shipment.to}</p>
-                          <p className="text-sm text-neutral-500">{formatDate(shipment.date)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(shipment.status)}
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2 mb-2">
-                        <button 
-                          className="p-2 text-neutral-500 hover:text-primary transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/edit-trip/${shipment.id}`);
-                          }}
-                          aria-label="Modifica"
+          <TabsContent value="trips">
+            {isLoading ? (
+              <div className="flex justify-center items-center min-h-[300px]">
+                <div className="text-center">
+                  <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-neutral-500">Caricamento in corso...</p>
+                </div>
+              </div>
+            ) : myTrips.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="bg-neutral-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-neutral-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2">Nessun viaggio</h3>
+                <p className="text-neutral-500 max-w-xs mx-auto mb-6">
+                  Non hai ancora segnalato nessun viaggio. Inizia ad accettare pacchi!
+                </p>
+                <Button onClick={() => navigate("/report-trip")} className="bg-primary text-white">
+                  Segnala un viaggio
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {pendingShipments.filter(s => s.type === "trip").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Viaggi attivi</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {pendingShipments.filter(s => s.type === "trip").map((shipment) => (
+                        <div
+                          key={`trip-${shipment.id}-${shipment.counterpart?.id || 'solo'}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                        <button 
-                          className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm("Sei sicuro di voler eliminare questo viaggio?")) {
-                              deleteTrip(shipment.id);
-                            }
-                          }}
-                          aria-label="Elimina"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                          </svg>
-                        </button>
-                      </div>
-
-                      {shipment.counterpart && (
-                        <div className="flex items-center py-2 border-t border-neutral-200">
-                          <div className="flex items-center">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={shipment.counterpart.photoURL} alt={shipment.counterpart.name} />
-                              <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Package from {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ offered</p>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Data: {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                              In attesa
                             </div>
                           </div>
-                          <Button
-                            onClick={() => handleOpenChat(shipment.counterpart!.id)}
-                            className="ml-auto bg-primary text-white rounded-lg px-3 py-1 text-sm font-medium h-auto"
-                          >
-                            Chat
-                          </Button>
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => navigate(`/trip-details/${shipment.id}`)}
+                                variant="outline"
+                                className="text-sm h-9"
+                              >
+                                Vedi dettagli
+                              </Button>
+                              
+                              <Button
+                                onClick={() => navigate(`/compatible-packages/${shipment.id}`)}
+                                className="bg-primary text-white text-sm h-9"
+                              >
+                                Trova pacchi
+                              </Button>
+                            </div>
+                            
+                            <Button
+                              onClick={() => deleteTrip(shipment.id)}
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700 text-sm h-9"
+                              disabled={isDeleting}
+                            >
+                              Elimina
+                            </Button>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {completedShipments.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Completed</h2>
+                )}
                 
-                {completedShipments.map((shipment) => (
-                  <div key={shipment.id} className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-4">
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div>
-                          <p className="text-neutral-900 font-medium">{shipment.from} → {shipment.to}</p>
-                          <p className="text-sm text-neutral-500">{formatDate(shipment.date)}</p>
-                        </div>
-                        {getStatusBadge(shipment.status)}
-                      </div>
-
-                      {shipment.counterpart && (
-                        <div className="flex items-center py-2 border-t border-neutral-200">
-                          <div className="flex items-center">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={shipment.counterpart.photoURL} alt={shipment.counterpart.name} />
-                              <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Package from {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ earned</p>
+                {inProgressShipments.filter(s => s.type === "trip").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Consegne in corso</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {inProgressShipments.filter(s => s.type === "trip").map((shipment) => (
+                        <div
+                          key={`trip-${shipment.id}-${shipment.counterpart?.id || 'solo'}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Data: {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                              In corso
                             </div>
                           </div>
-                          <div className="ml-auto">
-                            {shipment.counterpart.reviewed ? (
-                              <div className="text-yellow-400 flex">
-                                <Rating value={shipment.counterpart.rating || 5} readOnly size="sm" />
+                          
+                          {shipment.counterpart && (
+                            <div className="flex items-center justify-between mt-4 p-3 bg-neutral-50 rounded-lg">
+                              <div className="flex items-center">
+                                <Avatar className="h-10 w-10 mr-3">
+                                  {shipment.counterpart.photoURL ? (
+                                    <AvatarImage src={shipment.counterpart.photoURL} />
+                                  ) : (
+                                    <AvatarFallback>
+                                      {shipment.counterpart.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  )}
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{shipment.counterpart.name}</p>
+                                  <div className="flex items-center">
+                                    <Rating value={shipment.counterpart.rating || 0} readOnly />
+                                    <span className="text-xs text-neutral-500 ml-1">
+                                      {shipment.counterpart.rating?.toFixed(1) || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                            ) : (
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-primary mb-1">
+                                  {shipment.counterpart.price ? `${shipment.counterpart.price} €` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <Button
+                              onClick={() => navigate(`/trip-details/${shipment.id}`)}
+                              variant="outline"
+                              className="text-sm h-9"
+                            >
+                              Vedi dettagli
+                            </Button>
+                            
+                            {shipment.counterpart && (
                               <Button
-                                onClick={() => handleLeaveReview(shipment.id, shipment.counterpart!.id)}
-                                className="border border-neutral-300 text-neutral-700 rounded-lg px-3 py-1 text-sm font-medium h-auto"
+                                onClick={() => {
+                                  // Trova la chat room tra l'utente e il mittente
+                                  navigate(`/chat/${shipment.counterpart?.id}`);
+                                }}
+                                className="bg-primary text-white text-sm h-9"
                               >
-                                Review
+                                Chatta
                               </Button>
                             )}
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {filteredShipments.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-neutral-500">Non hai ancora nessun viaggio</p>
-                <Button
-                  onClick={() => navigate("/report-trip")}
-                  className="mt-4 bg-secondary text-white"
-                >
-                  Aggiungi un viaggio
-                </Button>
+                )}
+                
+                {completedShipments.filter(s => s.type === "trip").length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Viaggi completati</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {completedShipments.filter(s => s.type === "trip").map((shipment) => (
+                        <div
+                          key={`trip-${shipment.id}-${shipment.counterpart?.id || 'solo'}`}
+                          className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{shipment.from} → {shipment.to}</p>
+                              <p className="text-sm text-neutral-500">Completato: {formatDate(shipment.date)}</p>
+                            </div>
+                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">
+                              Completato
+                            </div>
+                          </div>
+                          
+                          {shipment.counterpart && (
+                            <div className="flex items-center justify-between mt-4 p-3 bg-neutral-50 rounded-lg">
+                              <div className="flex items-center">
+                                <Avatar className="h-10 w-10 mr-3">
+                                  {shipment.counterpart.photoURL ? (
+                                    <AvatarImage src={shipment.counterpart.photoURL} />
+                                  ) : (
+                                    <AvatarFallback>
+                                      {shipment.counterpart.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  )}
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{shipment.counterpart.name}</p>
+                                  <div className="flex items-center">
+                                    <Rating value={shipment.counterpart.rating || 0} readOnly />
+                                    <span className="text-xs text-neutral-500 ml-1">
+                                      {shipment.counterpart.rating?.toFixed(1) || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-primary mb-1">
+                                  {shipment.counterpart.price ? `${shipment.counterpart.price} €` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center mt-4">
+                            <Button
+                              onClick={() => navigate(`/trip-details/${shipment.id}`)}
+                              variant="outline"
+                              className="text-sm h-9"
+                            >
+                              Vedi dettagli
+                            </Button>
+                            
+                            {shipment.counterpart && !shipment.counterpart.reviewed && (
+                              <Button
+                                onClick={() => navigate(`/review/${shipment.id}?type=trip&userId=${shipment.counterpart?.id}`)}
+                                className="bg-primary text-white text-sm h-9"
+                              >
+                                Lascia recensione
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

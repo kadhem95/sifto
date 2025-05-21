@@ -216,20 +216,35 @@ export default function TripDetails() {
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <div className="flex flex-col w-full gap-4 mt-8">
+                {/* Pulsante "Trova pacchi compatibili" in evidenza */}
                 <Button
-                  onClick={() => navigate(`/edit-trip/${tripData.id}`)}
-                  className="bg-primary text-white px-6 py-3 rounded-lg h-auto font-medium"
+                  onClick={() => navigate(`/compatible-packages/${params.id}`)}
+                  className="w-full bg-primary text-white px-6 py-4 rounded-lg h-auto font-medium flex items-center justify-center gap-2"
                 >
-                  Modifica viaggio
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  👉 Trova pacchi compatibili
                 </Button>
-                <Button
-                  onClick={handleDelete}
-                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg h-auto font-medium"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Eliminazione in corso..." : "Elimina viaggio"}
-                </Button>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    onClick={() => navigate(`/edit-trip/${tripData.id}`)}
+                    className="bg-neutral-200 text-neutral-800 px-6 py-3 rounded-lg h-auto font-medium"
+                  >
+                    Modifica viaggio
+                  </Button>
+                  <Button
+                    onClick={handleDelete}
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg h-auto font-medium"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Eliminazione in corso..." : "Elimina viaggio"}
+                  </Button>
+                </div>
               </div>
             </>
           )}

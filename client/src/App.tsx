@@ -18,6 +18,7 @@ import PackageDetails from "@/pages/package-details";
 import TripDetails from "@/pages/trip-details";
 import EditPackage from "@/pages/edit-package";
 import EditTrip from "@/pages/edit-trip";
+import CompatiblePackages from "@/pages/compatible-packages";
 import { AuthProvider } from "./context/auth-context";
 import { useEffect } from "react";
 import { auth } from "./lib/firebase";
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/trip-details/:id" component={TripDetails} />
       <Route path="/edit-package/:id" component={EditPackage} />
       <Route path="/edit-trip/:id" component={EditTrip} />
+      <Route path="/compatible-packages/:tripId" component={CompatiblePackages} />
       <Route component={NotFound} />
     </Switch>
   );
