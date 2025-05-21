@@ -248,7 +248,7 @@ export default function SendPackage() {
                 Elaborazione in corso...
               </div>
             ) : (
-              "Trova Viaggiatori"
+              "Pubblica il pacco"
             )}
           </Button>
         </form>
