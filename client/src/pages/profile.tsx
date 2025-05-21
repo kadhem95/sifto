@@ -8,10 +8,11 @@ import { Rating } from "@/components/ui/rating";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, UserCircle, Upload } from "lucide-react";
+import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
-import { db, uploadProfileImage, auth } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, uploadProfileImage, auth, storage } from "@/lib/firebase";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -241,12 +242,124 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire la generazione di un nuovo avatar
+  // Funzione per gestire il caricamento di un'immagine di profilo
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentUser) {
       toast({
         title: "Errore",
-        description: "Devi essere loggato per cambiare l'avatar",
+        description: "Devi essere loggato per cambiare l'immagine del profilo",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
+    
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      console.log("Nessun file selezionato");
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    
+    try {
+      const file = files[0];
+      
+      // Controlliamo che sia un'immagine
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Formato non supportato",
+          description: "Per favore seleziona un'immagine (JPG, PNG, GIF)",
+          variant: "destructive",
+          duration: 3000
+        });
+        setIsUploadingImage(false);
+        return;
+      }
+      
+      console.log("Caricamento immagine di profilo:", file.name);
+      
+      // Utilizziamo la funzione uploadProfileImage da firebase.ts
+      try {
+        // Creiamo un riferimento a Firebase Storage
+        const storageRef = ref(storage, `profile_images/${currentUser.uid}_${Date.now()}`);
+        
+        // Upload del file
+        console.log("Inizio upload su Firebase Storage...");
+        await uploadBytes(storageRef, file);
+        console.log("Upload completato, recupero URL pubblico...");
+        
+        // Otteniamo l'URL pubblico dell'immagine
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log("URL immagine ottenuto:", downloadURL);
+        
+        // Aggiorniamo Firebase Auth
+        await updateProfile(currentUser, {
+          photoURL: downloadURL
+        });
+        console.log("Profilo Auth aggiornato con la nuova immagine");
+        
+        // Aggiorniamo anche Firestore
+        const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            photoURL: downloadURL,
+            updatedAt: new Date().toISOString()
+          });
+          console.log("Profilo Firestore aggiornato con la nuova immagine");
+        } else {
+          await addDoc(collection(db, 'users'), {
+            uid: currentUser.uid,
+            displayName: userName,
+            email: currentUser.email || '',
+            photoURL: downloadURL,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            rating: 0,
+            reviewCount: 0
+          });
+          console.log("Nuovo profilo utente creato in Firestore con l'immagine");
+        }
+        
+        toast({
+          title: "Immagine aggiornata",
+          description: "La tua immagine del profilo è stata caricata con successo!",
+          duration: 3000
+        });
+        
+        // Forziamo un refresh della pagina per vedere subito la nuova immagine
+        window.location.reload();
+        
+      } catch (uploadError) {
+        console.error("Errore durante l'upload dell'immagine:", uploadError);
+        throw uploadError;
+      }
+    } catch (error) {
+      console.error("Errore durante la gestione dell'immagine:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un problema durante il caricamento dell'immagine. Riprova più tardi.",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsUploadingImage(false);
+      // Reset del campo file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+  
+  // Funzione per generare un avatar basato sul nome
+  const handleGenerateAvatar = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Errore",
+        description: "Devi essere loggato per generare un avatar",
         variant: "destructive",
         duration: 3000
       });
@@ -256,7 +369,6 @@ export default function Profile() {
     setIsUploadingImage(true);
     
     try {
-      // Generiamo una nuova immagine di profilo
       console.log("Generazione nuovo avatar...");
       
       // Creiamo un colore unico basato sul nome utente
@@ -391,19 +503,36 @@ export default function Profile() {
                 </AvatarFallback>
               </Avatar>
               
-              {/* Bottone per il caricamento dell'immagine */}
-              <button 
-                className="absolute bottom-4 right-0 bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors"
-                onClick={handleImageButtonClick}
-                disabled={isUploadingImage}
-                title="Cambia immagine profilo"
-              >
-                {isUploadingImage ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Camera size={16} />
-                )}
-              </button>
+              {/* Bottoni per gestire l'immagine del profilo */}
+              <div className="absolute bottom-0 right-0 flex">
+                {/* Bottone per generare avatar */}
+                <button 
+                  className="bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors mr-2"
+                  onClick={handleGenerateAvatar}
+                  disabled={isUploadingImage}
+                  title="Genera avatar dalle iniziali"
+                >
+                  {isUploadingImage ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <User size={16} />
+                  )}
+                </button>
+                
+                {/* Bottone per caricare un'immagine */}
+                <button 
+                  className="bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors"
+                  onClick={handleImageButtonClick}
+                  disabled={isUploadingImage}
+                  title="Carica foto del profilo"
+                >
+                  {isUploadingImage ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Camera size={16} />
+                  )}
+                </button>
+              </div>
               
               {/* Input file nascosto */}
               <input
