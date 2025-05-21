@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import MessageItem, { MessageType } from "@/components/chat/message-item";
-import QuickActions from "@/components/chat/quick-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,10 +17,7 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  getDoc, 
-  where, 
-  getDocs,
-  updateDoc
+  getDoc
 } from "firebase/firestore";
 
 interface Message {
@@ -181,95 +177,10 @@ export default function Chat() {
     }
   };
 
-  const handleQuickAction = async (action: string) => {
-    if (!currentUser) return;
-    
-    try {
-      await sendMessage(id, currentUser.uid, action, "quickAction");
-    } catch (error) {
-      console.error("Error sending quick action:", error);
-    }
-  };
-
-  const handleSetMeetingPoint = () => {
-    handleQuickAction("📍 Meeting point: Let's meet at...");
-  };
-
-  const handleConfirmPrice = () => {
-    if (chatDetails?.packageId) {
-      handleQuickAction(`💸 I confirm the price of €${chatDetails.packagePrice || "..."}`);
-    } else {
-      handleQuickAction("💸 Let's discuss the price");
-    }
-  };
-
-  const handleDeliveryComplete = async () => {
-    if (!currentUser) return;
-    
-    await handleQuickAction("📦 Pacco consegnato con successo!");
-    
-    // Aggiorniamo lo stato della consegna nel database
-    if (chatDetails?.packageId || chatDetails?.tripId) {
-      try {
-        const packageId = chatDetails?.packageId;
-        const tripId = chatDetails?.tripId;
-        
-        // Aggiorniamo lo stato del match per segnalare che è stato consegnato
-        // e che è pronto per essere recensito
-        if (packageId) {
-          const matchRef = collection(db, "matches");
-          const matchQuery = query(
-            matchRef,
-            where("packageId", "==", packageId),
-            where("tripId", "==", tripId || null)
-          );
-          
-          const matchSnapshot = await getDocs(matchQuery);
-          if (!matchSnapshot.empty) {
-            const matchDoc = matchSnapshot.docs[0];
-            await updateDoc(doc(db, "matches", matchDoc.id), {
-              status: "completed",
-              completedAt: new Date().toISOString(),
-              reviewPending: true
-            });
-            
-            // Invia un messaggio informativo nella chat
-            await sendMessage(
-              id, 
-              currentUser.uid, 
-              "📝 Il pacco è stato consegnato! Ora è possibile lasciare una recensione", 
-              "text"
-            );
-            
-            // Inseriamo un messaggio con informazioni sulla recensione
-            setTimeout(async () => {
-              if (currentUser) {
-                const matchId = matchDoc.id;
-                await sendMessage(
-                  id, 
-                  currentUser.uid, 
-                  "Per lasciare una recensione, vai nella sezione 'Le mie spedizioni' e seleziona questa consegna", 
-                  "text"
-                );
-              }
-            }, 500);
-          }
-        }
-      } catch (error) {
-        console.error("Errore nell'aggiornamento dello stato di consegna:", error);
-      }
-    }
-  };
-
+  // Naviga indietro verso la lista delle chat
   const goBackToList = () => {
-    // Check if we should go to travelers list or packages list
-    if (chatDetails?.packageId) {
-      navigate("/travelers");
-    } else if (chatDetails?.tripId) {
-      navigate("/packages");
-    } else {
-      navigate("/");
-    }
+    // Torna alla lista messaggi
+    navigate("/messages");
   };
 
   if (isLoading) {
@@ -328,7 +239,7 @@ export default function Chat() {
 
         {/* Container scrollabile dei messaggi con padding che si adatta in base al focus dell'input */}
         <div 
-          className={`flex-1 overflow-y-auto p-2 md:p-3 pt-4 ${isInputFocused ? 'pb-16' : 'pb-28'}`}
+          className={`flex-1 overflow-y-auto p-2 md:p-3 pt-4 ${isInputFocused ? 'pb-16' : 'pb-20'}`}
           style={{ backgroundColor: "#F7F7FC", overscrollBehavior: "contain" }}
         >
           {messages.map((message) => (
@@ -358,17 +269,8 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con quick actions e input - fisso in basso ma con comportamento adattivo */}
-        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-200 ${isInputFocused ? "transform translate-y-0" : ""}`}>
-          {/* Quick Actions - visibili solo quando l'input non è attivo */}
-          {!isInputFocused && (
-            <QuickActions
-              onMeetingPoint={handleSetMeetingPoint}
-              onConfirmPrice={handleConfirmPrice}
-              onDeliveryComplete={handleDeliveryComplete}
-            />
-          )}
-          
+        {/* Footer con input - fisso in basso stile WhatsApp */}
+        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-150 ${isInputFocused ? "pb-1" : ""}`}>          
           {/* Input Area - con gestione del focus */}
           <div className="p-2 pb-3 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[48px] flex items-center">
