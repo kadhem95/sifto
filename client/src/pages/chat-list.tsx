@@ -10,7 +10,8 @@ import {
   getDocs, 
   orderBy, 
   doc,
-  getDoc
+  getDoc,
+  addDoc
 } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
@@ -80,20 +81,55 @@ export default function ChatList() {
           let otherUserPhoto = undefined;
           
           try {
-            // Utilizziamo la funzione getUserProfile migliorata per ottenere i dati più aggiornati
-            const userProfile = await getUserProfile(otherUserId);
+            // Funzione per ottenere o creare un profilo utente
+            const getOrCreateUserProfile = async (userId: string) => {
+              // Prima proviamo a ottenere il profilo esistente
+              const usersRef = collection(db, 'users');
+              const userQuery = query(usersRef, where('uid', '==', userId));
+              const querySnapshot = await getDocs(userQuery);
+              
+              if (!querySnapshot.empty) {
+                // Profilo trovato in Firestore
+                return {
+                  id: querySnapshot.docs[0].id,
+                  ...querySnapshot.docs[0].data()
+                };
+              }
+              
+              // Profilo non trovato, lo creiamo
+              console.log(`Lista chat: creazione profilo per utente ${userId}`);
+              
+              // Dati base per il nuovo profilo
+              const profileData = {
+                uid: userId,
+                displayName: `Utente (${userId.slice(0, 6)})`,
+                createdAt: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0
+              };
+              
+              // Aggiungiamo il nuovo profilo utente a Firestore
+              const docRef = await addDoc(collection(db, 'users'), profileData);
+              
+              console.log(`Profilo creato con successo per ${userId}`);
+              
+              // Restituiamo il profilo creato
+              return {
+                id: docRef.id,
+                ...profileData
+              };
+            };
             
-            if (userProfile) {
-              // Se il profilo esiste, prendiamo il nome visualizzato
-              otherUserName = userProfile.displayName || "";
-              otherUserPhoto = userProfile.photoURL;
-            }
+            // Ottieni o crea il profilo utente
+            const userProfile = await getOrCreateUserProfile(otherUserId);
             
-            // Fallback se non abbiamo un nome (questo garantisce che abbiamo sempre un nome visualizzato)
-            if (!otherUserName) {
-              // Creiamo un identificativo univoco basato sull'ID utente
-              otherUserName = `Utente (${otherUserId.slice(0, 6)}...)`;
-            }
+            // Ora abbiamo sicuramente un profilo, ma potrebbe essere di formati diversi
+            // Convertiamo il profilo in un formato più sicuro
+            const profileData = userProfile as any;
+            
+            // Prendiamo i dati che ci servono
+            otherUserName = profileData.displayName || `Utente (${otherUserId.slice(0, 6)}...)`;
+            otherUserPhoto = profileData.photoURL;
           } catch (error) {
             console.error("Errore nel recupero utente:", error);
             // Fallback in caso di errore

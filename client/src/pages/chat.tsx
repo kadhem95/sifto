@@ -19,7 +19,10 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  getDoc
+  getDoc,
+  getDocs,
+  where,
+  addDoc
 } from "firebase/firestore";
 
 interface Message {
@@ -112,24 +115,47 @@ export default function Chat() {
         
         if (participantId) {
           try {
-            // Prima verifichiamo se esiste un profilo, altrimenti lo creiamo automaticamente
-            let participantProfile = await getUserProfile(participantId);
+            // Creiamo una funzione per ottenere il profilo utente
+            const getOrCreateUserProfile = async (userId: string) => {
+              // Prima proviamo a ottenere il profilo esistente
+              const usersRef = collection(db, 'users');
+              const userQuery = query(usersRef, where('uid', '==', userId));
+              const querySnapshot = await getDocs(userQuery);
+              
+              if (!querySnapshot.empty) {
+                // Profilo trovato in Firestore
+                return {
+                  id: querySnapshot.docs[0].id,
+                  ...querySnapshot.docs[0].data()
+                };
+              }
+              
+              // Profilo non trovato, lo creiamo
+              console.log(`Creazione automatica profilo per utente: ${userId}`);
+              
+              // Dati base per il nuovo profilo
+              const profileData = {
+                uid: userId,
+                displayName: `Utente (${userId.slice(0, 6)})`,
+                email: "",
+                photoURL: "",
+                createdAt: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0
+              };
+              
+              // Aggiungiamo il nuovo profilo utente a Firestore
+              const docRef = await addDoc(collection(db, 'users'), profileData);
+              
+              // Restituiamo il profilo creato
+              return {
+                id: docRef.id,
+                ...profileData
+              };
+            };
             
-            // Se il profilo non esiste, creiamolo
-            if (!participantProfile) {
-              console.log(`Creazione automatica profilo per utente: ${participantId}`);
-              
-              // Raccogliamo informazioni dall'Auth se disponibili
-              const authUser = auth.currentUser?.uid === participantId ? auth.currentUser : null;
-              
-              // Creiamo un profilo utente base con le informazioni disponibili
-              participantProfile = await createUserProfile(participantId, {
-                displayName: authUser?.displayName || `Utente (${participantId.slice(0, 6)})`,
-                email: authUser?.email || "",
-                photoURL: authUser?.photoURL || "",
-                phoneNumber: authUser?.phoneNumber || ""
-              });
-            }
+            // Ottieni o crea il profilo utente
+            const participantProfile = await getOrCreateUserProfile(participantId);
             
             if (participantProfile) {
               // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
