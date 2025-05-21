@@ -124,15 +124,34 @@ export default function Chat() {
             const profileData = participantProfile as any;
             
             // Mostriamo il nome dell'utente recuperato
-            console.log(`Chat: Recuperato profilo per ${participantId}: ${profileData.displayName}`);
+            console.log(`Chat: Recuperato profilo per ${participantId}: ${profileData.displayName || 'Nome non disponibile'}`);
             
-            // Impostiamo i dati del partecipante
-            setParticipant({
-              id: profileData.uid || participantId,
-              name: profileData.displayName || `Utente (${participantId.slice(0, 6)})`,
-              photoURL: profileData.photoURL,
-              isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
-            });
+            // Verifichiamo se questo utente ha un nome valido
+            const hasValidName = profileData.displayName && profileData.displayName.trim() !== '';
+            
+            // Se non ha un nome valido, proviamo a recuperarlo da altre fonti
+            if (!hasValidName) {
+              console.log(`${participantId} non ha un nome valido, verifichiamo in Auth...`);
+              
+              // In questo caso potremmo anche creare un nome basato sulla sua email se disponibile
+              const fallbackName = profileData.email ? profileData.email.split('@')[0] : `Utente (${participantId.slice(0, 6)})`;
+              
+              // Impostiamo un nome temporaneo
+              setParticipant({
+                id: profileData.uid || participantId,
+                name: fallbackName,
+                photoURL: profileData.photoURL,
+                isOnline: false
+              });
+            } else {
+              // Impostiamo i dati del partecipante normalmente
+              setParticipant({
+                id: profileData.uid || participantId,
+                name: profileData.displayName,
+                photoURL: profileData.photoURL,
+                isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
+              });
+            }
           } catch (error) {
             console.error("Errore nel recupero/creazione profilo utente:", error);
             

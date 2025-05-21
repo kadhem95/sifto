@@ -329,17 +329,22 @@ export const getUserProfile = async (userId: string) => {
         id: userSnapshot.docs[0].id,
         ...userSnapshot.docs[0].data()
       };
-      console.log(`Dati recuperati da Firestore:`, firestoreUserData.displayName);
+      // Convertiamo i dati in any per evitare errori TypeScript
+      const firestoreData = userSnapshot.docs[0].data();
+      console.log(`Dati recuperati da Firestore:`, firestoreData.displayName || 'Nome non disponibile');
     }
     
     // Se abbiamo trovato dati in Firestore
     if (firestoreUserData) {
       // Combiniamo i dati, dando priorità a quelli di Auth se disponibili
+      // Utilizziamo il casting per assicurarci che TypeScript non generi errori
+      const firestoreData = firestoreUserData as any;
+      
       return {
-        ...firestoreUserData,
+        ...firestoreData,
         ...(authUserData ? {
-          displayName: authUserData.displayName || firestoreUserData.displayName,
-          photoURL: authUserData.photoURL || firestoreUserData.photoURL,
+          displayName: authUserData.displayName || firestoreData.displayName,
+          photoURL: authUserData.photoURL || firestoreData.photoURL,
         } : {})
       };
     }
