@@ -209,11 +209,25 @@ export default function MyShipments() {
         }
         
         // 2. Recupera i viaggi dell'utente
+        console.log("Cercando viaggi per l'utente con UID:", currentUser.uid);
         const tripsQuery = query(
           collection(db, "trips"),
           where("userId", "==", currentUser.uid)
         );
         const tripsSnapshot = await getDocs(tripsQuery);
+        
+        console.log("Numero di viaggi trovati:", tripsSnapshot.docs.length);
+        if (tripsSnapshot.docs.length === 0) {
+          // Proviamo a recuperare tutti i viaggi e controlliamo manualmente
+          const allTripsQuery = query(collection(db, "trips"));
+          const allTripsSnapshot = await getDocs(allTripsQuery);
+          console.log("Totale viaggi nel database:", allTripsSnapshot.docs.length);
+          
+          allTripsSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            console.log("Viaggio trovato - ID:", doc.id, "UserID:", data.userId);
+          });
+        }
         
         for (const tripDoc of tripsSnapshot.docs) {
           const tripData = tripDoc.data();
