@@ -450,39 +450,80 @@ export const uploadPackageImage = async (packageId: string, file: File) => {
 // Funzione per caricare l'immagine del profilo
 export const uploadProfileImage = async (userId: string, file: File) => {
   try {
-    // Usiamo il timestamp per evitare problemi di cache con lo stesso nome file
-    const fileName = `profile_${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, `users/${userId}/profile/${fileName}`);
+    console.log(`Inizio processo di caricamento immagine per utente ${userId}`);
     
-    // Carica il file
-    await uploadBytes(storageRef, file);
+    // Utilizziamo FileReader per convertire l'immagine in dataURL
+    // Questo approccio evita i problemi con Firebase Storage che può causare blocchi infiniti
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          console.log("Immagine convertita in Data URL");
+          
+          // Aggiorna il profilo dell'utente su Firebase Auth
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            console.log("Aggiornamento profilo in Firebase Auth...");
+            await updateProfile(currentUser, {
+              photoURL: dataUrl
+            });
+            console.log("Profilo Auth aggiornato con successo");
+          }
+          
+          // Aggiorna anche il documento dell'utente in Firestore
+          try {
+            console.log("Aggiornamento profilo in Firestore...");
+            const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              await updateDoc(doc(db, 'users', userDoc.id), {
+                photoURL: dataUrl,
+                updatedAt: new Date().toISOString()
+              });
+              console.log("Profilo Firestore aggiornato con successo");
+            } else {
+              console.log("Utente non trovato in Firestore, creazione nuovo profilo...");
+              // Se l'utente non esiste, creiamo un nuovo documento
+              await addDoc(collection(db, 'users'), {
+                uid: userId,
+                photoURL: dataUrl,
+                displayName: currentUser?.displayName || '',
+                email: currentUser?.email || '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0
+              });
+              console.log("Nuovo profilo creato in Firestore");
+            }
+          } catch (firestoreError) {
+            console.error("Errore durante l'aggiornamento del profilo in Firestore:", firestoreError);
+            // Continuiamo comunque, l'immagine è già salvata in Auth
+          }
+          
+          console.log('Immagine profilo salvata con successo');
+          resolve(dataUrl);
+        } catch (processingError) {
+          console.error('Errore durante l\'elaborazione dell\'immagine:', processingError);
+          reject(processingError);
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('Errore nella lettura del file:', error);
+        reject(error);
+      };
+      
+      // Inizia la lettura del file come Data URL
+      reader.readAsDataURL(file);
+    });
     
-    // Ottieni l'URL del file caricato
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    // Aggiorna il profilo dell'utente su Firebase Auth
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      await updateProfile(currentUser, {
-        photoURL: downloadURL
-      });
-    }
-    
-    // Aggiorna anche il profilo dell'utente in Firestore
-    const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
-    const userSnapshot = await getDocs(userQuery);
-    
-    if (!userSnapshot.empty) {
-      const userDoc = userSnapshot.docs[0];
-      await updateDoc(doc(db, 'users', userDoc.id), {
-        photoURL: downloadURL,
-        updatedAt: new Date().toISOString()
-      });
-    }
-    
-    return downloadURL;
   } catch (error) {
-    console.error("Errore durante il caricamento dell'immagine del profilo:", error);
+    console.error('Errore nel caricamento dell\'immagine profilo:', error);
     throw error;
   }
 };
