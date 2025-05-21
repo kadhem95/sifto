@@ -279,7 +279,7 @@ export default function MyShipments() {
         <div className="p-6 flex justify-center items-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-neutral-500">Loading your activities...</p>
+            <p className="text-neutral-500">Caricamento attività in corso...</p>
           </div>
         </div>
       </AppLayout>
