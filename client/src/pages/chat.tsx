@@ -76,7 +76,10 @@ export default function Chat() {
         setChatDetails(chatRoomData);
         
         // Get other participant info
-        const participantId = chatRoomData.participants.find(
+        // Compatibilità con il nuovo formato delle chat room che usa 'users' invece di 'participants'
+        const participants = chatRoomData.participants || chatRoomData.users || [];
+        console.log("Chat room data:", chatRoomData);
+        const participantId = participants.find(
           (pid: string) => pid !== currentUser.uid
         );
         
