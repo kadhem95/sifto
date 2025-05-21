@@ -37,8 +37,11 @@ export default function Profile() {
       return;
     }
 
+    // Assicuriamoci di avere sempre il nome utente più recente
+    setUserName(currentUser.displayName || "");
+    
     if (userProfile) {
-      setUserName(userProfile.displayName || "");
+      setUserName(userProfile.displayName || currentUser.displayName || "");
     }
 
     const fetchData = async () => {
@@ -158,9 +161,29 @@ export default function Profile() {
           displayName: userName.trim()
         });
         
-        // Poi aggiorniamo il nome nel database locale
-        // Nota: questo è un approccio semplificato poiché abbiamo problemi di connessione a Firebase
-        // In una versione produttiva, dovremmo anche aggiornare il database Firestore
+        // Aggiorniamo anche il database Firestore per garantire la coerenza dei dati
+        try {
+          // Trova il documento utente in Firestore
+          const usersQuery = query(
+            collection(db, "users"),
+            where("uid", "==", currentUser.uid)
+          );
+          const userSnapshot = await getDocs(usersQuery);
+          
+          if (!userSnapshot.empty) {
+            // Se troviamo il documento utente, aggiorniamo il displayName
+            const userDoc = userSnapshot.docs[0];
+            await updateDoc(doc(db, "users", userDoc.id), {
+              displayName: userName.trim()
+            });
+            console.log("Profilo utente aggiornato in Firestore con successo");
+          } else {
+            console.warn("Documento utente non trovato in Firestore");
+          }
+        } catch (firestoreError) {
+          console.error("Errore nell'aggiornamento del profilo su Firestore:", firestoreError);
+          // Non blocchiamo il flusso principale se fallisce l'aggiornamento del database
+        }
         
         toast({
           title: "Profilo aggiornato",
