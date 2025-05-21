@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
+import { LocationInput } from "@/components/ui/location-input";
 
 const packageFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di partenza"),
@@ -33,6 +34,7 @@ export default function SendPackage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
