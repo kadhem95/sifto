@@ -298,9 +298,13 @@ export default function ChatList() {
                     <Avatar className="h-12 w-12 mr-3 border border-neutral-200 shadow-sm">
                       {chat.otherUser.photoURL ? (
                         <AvatarImage 
-                          src={chat.otherUser.photoURL} 
+                          src={`${chat.otherUser.photoURL}?t=${Date.now()}`}
                           alt={`Foto di ${chat.otherUser.name.split(' ')[0]}`}
                           className="object-cover"
+                          onError={(e) => {
+                            console.log("Errore nel caricamento dell'immagine in chat list, uso fallback");
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-medium">
