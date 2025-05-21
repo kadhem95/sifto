@@ -144,11 +144,22 @@ export default function Chat() {
                 isOnline: false
               });
             } else {
+              // Gestiamo l'URL dell'immagine per evitare problemi di cache
+              let photoURL = profileData.photoURL;
+              
+              // Se c'è un'immagine di profilo, aggiungiamo un timestamp per forzare il refresh
+              if (photoURL) {
+                const hasQueryParams = photoURL.includes('?');
+                const separator = hasQueryParams ? '&' : '?';
+                photoURL = `${photoURL}${separator}t=${Date.now()}`;
+                console.log(`Immagine profilo in chat per ${profileData.displayName}:`, photoURL);
+              }
+              
               // Impostiamo i dati del partecipante normalmente
               setParticipant({
                 id: profileData.uid || participantId,
                 name: profileData.displayName,
-                photoURL: profileData.photoURL,
+                photoURL: photoURL,
                 isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
               });
             }
