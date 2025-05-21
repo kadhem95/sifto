@@ -57,14 +57,28 @@ export default function Chat() {
     return () => clearTimeout(timer);
   }, [messages]);
   
-  // Scroll automatico quando l'input viene messo a fuoco (tastiera aperta)
+  // Gestione avanzata dello scroll e della tastiera
   useEffect(() => {
     if (isInputFocused) {
-      // Assicuriamo che la vista si sposti immediatamente quando la tastiera si apre
-      // Aggiungiamo un piccolo ritardo per dare tempo alla tastiera di aprirsi completamente
-      setTimeout(() => {
+      // Prima solleviamo il viewport immediatamente
+      scrollToBottom();
+      
+      // Poi con un piccolo ritardo per dare tempo alla tastiera di aprirsi
+      // assicuriamo che tutto sia visibile
+      const timer1 = setTimeout(() => {
         scrollToBottom(true);
-      }, 300);
+      }, 150);
+      
+      // Infine con un ulteriore ritardo per assicurarci che tutto sia a posto
+      // anche su dispositivi più lenti
+      const timer2 = setTimeout(() => {
+        scrollToBottom(true);
+      }, 350);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [isInputFocused]);
   
@@ -276,14 +290,16 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con input - fisso in basso stile WhatsApp con gestione keyboard */}
-        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-200`} 
+        {/* Footer con input - fisso in basso stile WhatsApp con gestione keyboard ottimizzata */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10" 
              style={{ 
-               transform: isInputFocused ? 'translateY(-4px)' : 'translateY(0)',
-               willChange: 'transform'
+               paddingBottom: isInputFocused ? '8px' : '0px',
+               transform: isInputFocused ? 'translateY(-8px)' : 'translateY(0)',
+               transition: 'transform 0.25s ease-out, padding-bottom 0.25s ease-out',
+               willChange: 'transform, padding-bottom'
              }}>          
-          {/* Input Area - con gestione del focus */}
-          <div className="p-2 pt-3 pb-3 bg-white flex items-center">
+          {/* Input Area - con gestione del focus migliorata per keyboard */}
+          <div className="p-2 pt-2 pb-2 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[48px] flex items-center">
               <textarea
                 className="w-full bg-transparent border-none shadow-none py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 resize-none overflow-hidden max-h-[120px] outline-none"
@@ -291,10 +307,14 @@ export default function Chat() {
                 value={newMessage}
                 onChange={(e) => {
                   setNewMessage(e.target.value);
-                  // Auto-resize della textarea in base al contenuto
-                  e.target.style.height = 'auto';
-                  const newHeight = Math.min(e.target.scrollHeight, 120); // Limita a 120px max
+                  // Auto-resize della textarea in base al contenuto con comportamento migliorato
+                  e.target.style.height = '0px'; // Reset dell'altezza per un calcolo preciso
+                  const newHeight = Math.min(Math.max(e.target.scrollHeight, 24), 120); // Minimo 24px, massimo 120px
                   e.target.style.height = `${newHeight}px`;
+                  // Triggheriamo uno scroll quando la textarea si espande
+                  if (newHeight > 48 && e.target.value.length > 30) {
+                    scrollToBottom(true);
+                  }
                 }}
                 onKeyDown={handleKeyPress}
                 onFocus={() => setIsInputFocused(true)}
