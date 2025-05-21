@@ -10,7 +10,7 @@ import SendPackage from "@/pages/send-package-new-improved";
 import ReportTrip from "@/pages/report-trip";
 import TravelersList from "@/pages/travelers-list";
 import PackagesList from "@/pages/packages-list";
-import Chat from "@/pages/chat";
+import Chat from "@/pages/chat"; // Torniamo alla versione ottimizzata della chat
 import MyShipments from "@/pages/my-shipments-simplified";
 import Review from "@/pages/review";
 import Profile from "@/pages/profile";
