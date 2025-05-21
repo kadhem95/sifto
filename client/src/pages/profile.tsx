@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Rating } from "@/components/ui/rating";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Rating } from "@/components/ui/rating";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, UserCircle, Upload } from "lucide-react";
@@ -240,47 +241,57 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire l'upload dell'immagine - versione migliorata con avatar generati
+  // Funzione per gestire la generazione di un nuovo avatar
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !currentUser) return;
+    if (!currentUser) {
+      toast({
+        title: "Errore",
+        description: "Devi essere loggato per cambiare l'avatar",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
     
     setIsUploadingImage(true);
     
     try {
-      console.log("Generazione avatar personalizzato...");
+      // Generiamo una nuova immagine di profilo
+      console.log("Generazione nuovo avatar...");
       
-      // Estraiamo il nome e cognome per generare iniziali più accurate
-      const nameParts = userName.trim().split(' ');
-      let initials = '';
-      
-      if (nameParts.length >= 2) {
-        // Se abbiamo nome e cognome, prendiamo la prima lettera di ciascuno
-        initials = `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`;
-      } else {
-        // Altrimenti prendiamo le prime due lettere del nome o almeno la prima
-        initials = nameParts[0].substring(0, Math.min(2, nameParts[0].length));
+      // Determina il colore in base al nome utente per rendere l'avatar più personale
+      // ma allo stesso tempo coerente per lo stesso utente
+      function stringToColor(str: string): string {
+        const colors = [
+          '0D8ABC', // Blue primario
+          '7048E8', // Purple
+          '00A896', // Teal
+          'F58A07', // Orange
+          'F25F5C', // Coral
+        ];
+        
+        // Usa il nome utente per scegliere un colore deterministico
+        const hash = str.split('').reduce((acc, char) => {
+          return acc + char.charCodeAt(0);
+        }, 0);
+        
+        return colors[hash % colors.length];
       }
       
-      // Colori personalizzati per l'avatar
-      const colors = [
-        '0D8ABC', // Blue primario
-        '7048E8', // Purple
-        '00A896', // Teal
-        'F58A07', // Orange
-        'F25F5C', // Coral
-      ];
+      // Crea un avatar con il nome utente
+      const avatarColor = stringToColor(userName);
+      const timestamp = Date.now(); // Aggiungiamo timestamp per evitare cache
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=${avatarColor}&color=fff&size=256&t=${timestamp}`;
       
-      // Scegliamo un colore casuale per l'avatar
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      console.log("Nuovo avatar generato:", avatarUrl);
       
-      // Creiamo l'URL dell'avatar personalizzato con cache-busting
-      const timestamp = Date.now();
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=256&background=${randomColor}&color=fff&bold=true&t=${timestamp}`;
+      // Aggiorna il profilo su Firebase Auth
+      await updateProfile(currentUser, {
+        photoURL: avatarUrl
+      });
+      console.log("Profilo Auth aggiornato con il nuovo avatar");
       
-      console.log("Avatar URL generato:", avatarUrl);
-
-      // Aggiorniamo sempre prima Firestore
+      // Aggiorna anche Firestore per mantenere i dati sincronizzati
       const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
       const userSnapshot = await getDocs(userQuery);
       
@@ -290,12 +301,11 @@ export default function Profile() {
           photoURL: avatarUrl,
           updatedAt: new Date().toISOString()
         });
-        console.log("Profilo Firestore aggiornato con avatar personalizzato");
+        console.log("Profilo Firestore aggiornato con il nuovo avatar");
       } else {
-        // Se l'utente non esiste in Firestore, lo creiamo
         await addDoc(collection(db, 'users'), {
           uid: currentUser.uid,
-          displayName: currentUser.displayName || '',
+          displayName: userName,
           email: currentUser.email || '',
           photoURL: avatarUrl,
           createdAt: new Date().toISOString(),
@@ -303,46 +313,27 @@ export default function Profile() {
           rating: 0,
           reviewCount: 0
         });
-        console.log("Nuovo profilo utente creato in Firestore con avatar personalizzato");
-      }
-      
-      // Poi aggiorniamo anche Firebase Auth, meno critico per la visualizzazione nell'app
-      if (currentUser) {
-        await updateProfile(currentUser, {
-          photoURL: avatarUrl
-        });
-        console.log("Profilo Auth aggiornato con avatar personalizzato");
+        console.log("Nuovo profilo utente creato in Firestore");
       }
       
       toast({
         title: "Avatar aggiornato",
-        description: "Abbiamo creato un nuovo avatar personalizzato per te!",
+        description: "Il tuo nuovo avatar è stato generato con successo!",
         duration: 3000
       });
       
-      // Pulizia del campo input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      
-      // Aggiorniamo manualmente il contesto per riflettere immediatamente i cambiamenti
-      // senza dover riavviare la pagina
-      const { refreshUserProfile } = useAuth();
-      await refreshUserProfile();
-      
-      // Attendiamo un attimo prima di indicare che l'upload è completato
-      setTimeout(() => {
-        setIsUploadingImage(false);
-      }, 500);
+      // Forziamo un refresh della pagina per vedere subito il nuovo avatar
+      window.location.reload();
       
     } catch (error) {
       console.error("Errore durante la generazione dell'avatar:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un problema durante la generazione dell'avatar. Riprova più tardi.",
+        description: "Non è stato possibile generare un nuovo avatar. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
+    } finally {
       setIsUploadingImage(false);
     }
   };
@@ -381,21 +372,14 @@ export default function Profile() {
           <div className="p-6 flex flex-col items-center">
             {/* Avatar con overlay per il caricamento dell'immagine */}
             <div className="relative">
-              <Avatar className="w-24 h-24 mb-4">
-                {/* Forziamo un refresh dell'URL dell'immagine con un timestamp per evitare la cache */}
-                <AvatarImage 
-                  src={userProfile?.photoURL || currentUser?.photoURL || ''}
-                  alt={userName} 
-                  className="object-cover"
-                  onError={(e) => {
-                    console.log("Errore nel caricamento dell'immagine, uso fallback");
-                    e.currentTarget.style.display = 'none';
-                  }}
+              {/* Utilizziamo il nuovo componente UserAvatar ottimizzato */}
+              <div className="mb-4">
+                <UserAvatar 
+                  photoURL={userProfile?.photoURL || currentUser?.photoURL}
+                  displayName={userName}
+                  size="lg"
                 />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
-                  {userName.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              </div>
               
               {/* Bottone per il caricamento dell'immagine */}
               <button 
