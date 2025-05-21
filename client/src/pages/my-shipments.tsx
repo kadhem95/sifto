@@ -262,6 +262,90 @@ export default function MyShipments() {
     // Navigate to the review page for the counterpart
     navigate(`/review/${counterpartId}?shipmentId=${shipmentId}&type=${activeTab}`);
   };
+  
+  // Funzione per eliminare un pacco
+  const handleDeletePackage = async (packageId: string) => {
+    if (window.confirm("Sei sicuro di voler eliminare questo pacco?")) {
+      setIsDeleting(true);
+      try {
+        // Verifica se ci sono dei match associati al pacco
+        const matchesQuery = query(
+          collection(db, "matches"),
+          where("packageId", "==", packageId)
+        );
+        const matchesSnapshot = await getDocs(matchesQuery);
+        
+        // Elimina tutti i match associati
+        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => 
+          deleteDoc(doc(db, "matches", matchDoc.id))
+        );
+        await Promise.all(deleteMatchPromises);
+        
+        // Elimina il pacco
+        await deleteDoc(doc(db, "packages", packageId));
+        
+        // Aggiorna la lista dei pacchi rimuovendo quello eliminato
+        setShipments(shipments.filter(s => !(s.id === packageId && s.type === "package")));
+        
+        toast({
+          title: "Pacco eliminato",
+          description: "Il pacco è stato eliminato con successo.",
+          variant: "default"
+        });
+      } catch (error) {
+        console.error("Errore durante l'eliminazione del pacco:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante l'eliminazione del pacco.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+  
+  // Funzione per eliminare un viaggio
+  const handleDeleteTrip = async (tripId: string) => {
+    if (window.confirm("Sei sicuro di voler eliminare questo viaggio?")) {
+      setIsDeleting(true);
+      try {
+        // Verifica se ci sono dei match associati al viaggio
+        const matchesQuery = query(
+          collection(db, "matches"),
+          where("tripId", "==", tripId)
+        );
+        const matchesSnapshot = await getDocs(matchesQuery);
+        
+        // Elimina tutti i match associati
+        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => 
+          deleteDoc(doc(db, "matches", matchDoc.id))
+        );
+        await Promise.all(deleteMatchPromises);
+        
+        // Elimina il viaggio
+        await deleteDoc(doc(db, "trips", tripId));
+        
+        // Aggiorna la lista dei viaggi rimuovendo quello eliminato
+        setShipments(shipments.filter(s => !(s.id === tripId && s.type === "trip")));
+        
+        toast({
+          title: "Viaggio eliminato",
+          description: "Il viaggio è stato eliminato con successo.",
+          variant: "default"
+        });
+      } catch (error) {
+        console.error("Errore durante l'eliminazione del viaggio:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante l'eliminazione del viaggio.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
   const filteredShipments = shipments.filter((shipment) => 
     (activeTab === "packages" && shipment.type === "package") || 
@@ -345,10 +429,7 @@ export default function MyShipments() {
                           className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm("Sei sicuro di voler eliminare questo pacco?")) {
-                              // Funzione per eliminare il pacco
-                              // deletePackage(shipment.id);
-                            }
+                            handleDeletePackage(shipment.id);
                           }}
                           aria-label="Elimina"
                         >
