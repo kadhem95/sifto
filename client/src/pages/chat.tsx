@@ -280,9 +280,19 @@ export default function Chat() {
           </button>
           {participant && (
             <div className="flex items-center ml-1 flex-1">
-              <Avatar className="w-9 h-9">
-                <AvatarImage src={participant.photoURL} alt={participant.name} />
-                <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
+              <Avatar className="w-9 h-9 border border-neutral-200">
+                <AvatarImage 
+                  src={participant.photoURL || ''} 
+                  alt={participant.name} 
+                  className="object-cover"
+                  onError={(e) => {
+                    console.log("Errore caricamento immagine utente in chat header");
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
+                  {participant.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className="ml-2.5 truncate">
                 <h3 className="text-neutral-900 font-medium text-sm truncate">{participant.name}</h3>

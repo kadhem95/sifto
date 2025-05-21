@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Rating } from "@/components/ui/rating";
-import { UserAvatar } from "@/components/ui/user-avatar";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -352,14 +352,20 @@ export default function Profile() {
           <div className="p-6 flex flex-col items-center">
             {/* Avatar con overlay per il caricamento dell'immagine */}
             <div className="relative">
-              {/* Utilizziamo il nuovo componente UserAvatar ottimizzato */}
-              <div className="mb-4">
-                <UserAvatar 
-                  photoURL={userProfile?.photoURL || currentUser?.photoURL}
-                  displayName={userName}
-                  size="lg"
+              <Avatar className="w-24 h-24 mb-4 border border-neutral-200">
+                <AvatarImage 
+                  src={userProfile?.photoURL || currentUser?.photoURL || ''}
+                  alt={userName}
+                  className="object-cover"
+                  onError={(e) => {
+                    console.log("Errore nel caricamento dell'immagine profilo");
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
-              </div>
+                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xl font-medium">
+                  {userName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               
               {/* Bottone per il caricamento dell'immagine */}
               <button 

@@ -52,10 +52,12 @@ export default function MessageItem({
 
   return (
     <div className={`flex ${isSender ? "justify-end" : "justify-start"} mb-2 mx-1`}>
-      {!isSender && senderAvatar && (
+      {!isSender && (
         <Avatar className="w-7 h-7 mr-1.5 mt-1 flex-shrink-0">
-          <AvatarImage src={senderAvatar} alt={senderName || "User"} />
-          <AvatarFallback>{senderName?.charAt(0) || "U"}</AvatarFallback>
+          <AvatarImage src={senderAvatar || ''} alt={senderName || "User"} />
+          <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
+            {senderName?.charAt(0) || "U"}
+          </AvatarFallback>
         </Avatar>
       )}
       <div
