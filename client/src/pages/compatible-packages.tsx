@@ -118,9 +118,33 @@ export default function CompatiblePackages() {
         variant: "default"
       });
       
-      // 5. Reindirizzare direttamente alla chat con il mittente
+      // 5. Reindirizzare direttamente alla chat room creata
+      console.log("Chat room creata con ID:", chatRoomRef.id);
+      
+      // Salviamo l'id della chat room per verificare
+      await updateDoc(doc(db, "matches", matchRef.id), {
+        chatRoomId: chatRoomRef.id
+      });
+      
+      // Aggiungiamo un messaggio di benvenuto alla chat
+      const welcomeMessageData = {
+        senderId: "system",
+        content: "Benvenuto nella chat! Ora puoi comunicare con il mittente del pacco.",
+        timestamp: new Date().toISOString(),
+        type: "text"
+      };
+      
+      await addDoc(collection(db, "chatRooms", chatRoomRef.id, "messages"), welcomeMessageData);
+      
+      toast({
+        title: "Chat creata!",
+        description: "Ti stiamo reindirizzando alla chat...",
+        variant: "default"
+      });
+      
+      // Ora reindirizza alla pagina della chat usando l'ID della chat room
       setTimeout(() => {
-        navigate(`/chat/${selectedPackage.userId}`);
+        navigate(`/chat/${chatRoomRef.id}`);
       }, 1000);
     } catch (error) {
       console.error("Errore durante l'accettazione del pacco:", error);
