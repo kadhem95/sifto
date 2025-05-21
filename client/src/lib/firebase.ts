@@ -125,15 +125,38 @@ export const logout = async () => {
 // User profile functions
 export const createUserProfile = async (userId: string, userData: any) => {
   try {
-    await addDoc(collection(db, 'users'), {
+    // Verifichiamo prima se l'utente esiste già
+    const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+    
+    if (!userSnapshot.empty) {
+      console.log(`Profilo utente già esistente per l'ID: ${userId}`);
+      // Se esiste già, restituiamo il documento esistente
+      return {
+        id: userSnapshot.docs[0].id,
+        ...userSnapshot.docs[0].data()
+      };
+    }
+    
+    // Se non esiste, lo creiamo
+    console.log(`Creazione nuovo profilo utente per l'ID: ${userId}`);
+    const userDocRef = await addDoc(collection(db, 'users'), {
       uid: userId,
       ...userData,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       rating: 0,
       reviewCount: 0
     });
+    
+    // Restituisci il nuovo documento creato
+    const newUserDoc = await getDoc(userDocRef);
+    return {
+      id: userDocRef.id,
+      ...newUserDoc.data()
+    };
   } catch (error) {
-    console.error("Error creating user profile:", error);
+    console.error("Errore nella creazione del profilo utente:", error);
     throw error;
   }
 };

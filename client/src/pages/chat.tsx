@@ -9,7 +9,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { 
   db, 
   sendMessage, 
-  getUserProfile
+  getUserProfile,
+  createUserProfile,
+  auth
 } from "@/lib/firebase";
 import { 
   doc, 
@@ -109,28 +111,46 @@ export default function Chat() {
         );
         
         if (participantId) {
-          const participantProfile = await getUserProfile(participantId);
-          
-          if (participantProfile) {
-            // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
-            const profileData = participantProfile as any;
+          try {
+            // Prima verifichiamo se esiste un profilo, altrimenti lo creiamo automaticamente
+            let participantProfile = await getUserProfile(participantId);
             
-            // Determiniamo il vero nome dell'utente dalla fonte più affidabile disponibile
-            const userDisplayName = profileData.displayName || 
-                                    (profileData.phoneNumber ? `User (${profileData.phoneNumber.slice(-4)})` : 
-                                    (profileData.email ? profileData.email.split('@')[0] : participantId.slice(0, 8)));
+            // Se il profilo non esiste, creiamolo
+            if (!participantProfile) {
+              console.log(`Creazione automatica profilo per utente: ${participantId}`);
+              
+              // Raccogliamo informazioni dall'Auth se disponibili
+              const authUser = auth.currentUser?.uid === participantId ? auth.currentUser : null;
+              
+              // Creiamo un profilo utente base con le informazioni disponibili
+              participantProfile = await createUserProfile(participantId, {
+                displayName: authUser?.displayName || `Utente (${participantId.slice(0, 6)})`,
+                email: authUser?.email || "",
+                photoURL: authUser?.photoURL || "",
+                phoneNumber: authUser?.phoneNumber || ""
+              });
+            }
             
-            setParticipant({
-              id: profileData.uid || participantId,
-              name: userDisplayName,
-              photoURL: profileData.photoURL,
-              isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
-            });
-          } else {
-            // Fallback se il profilo non viene trovato
-            console.warn(`Profilo utente non trovato per l'ID: ${participantId}`);
+            if (participantProfile) {
+              // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
+              const profileData = participantProfile as any;
+              
+              // Determiniamo il vero nome dell'utente dalla fonte più affidabile disponibile
+              const userDisplayName = profileData.displayName || 
+                                     (profileData.phoneNumber ? `${profileData.phoneNumber.slice(-4)}` : 
+                                     (profileData.email ? profileData.email.split('@')[0] : participantId.slice(0, 8)));
+              
+              setParticipant({
+                id: profileData.uid || participantId,
+                name: userDisplayName,
+                photoURL: profileData.photoURL,
+                isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
+              });
+            }
+          } catch (error) {
+            console.error("Errore nel recupero/creazione profilo utente:", error);
             
-            // Creazione di un partecipante con informazioni minime ma identificabili
+            // Fallback in caso di errore
             setParticipant({
               id: participantId,
               name: `Utente (${participantId.slice(0, 8)}...)`,

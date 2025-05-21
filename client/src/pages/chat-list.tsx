@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/lib/firebase";
+import { db, getUserProfile } from "@/lib/firebase";
 import { 
   collection, 
   query, 
