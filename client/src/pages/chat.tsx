@@ -275,19 +275,18 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con input - stile WhatsApp che si solleva sulla tastiera */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 z-10"
+        {/* Input box in stile WhatsApp che si solleva sulla tastiera */}
+        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 z-10 ${isInputFocused ? 'input-focused' : ''}`}
              style={{ 
-               transform: isInputFocused ? 'translateY(-25px)' : 'translateY(0)',
-               transition: 'transform 0.2s ease-out',
-               willChange: 'transform'
+               transition: 'transform 0.25s ease-out',
+               transform: isInputFocused ? 'translateY(-32px)' : 'translateY(0)'
              }}>          
           {/* Input Area - stile WhatsApp semplificato */}
           <div className="p-3 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 flex items-center h-12">
               <input
                 type="text"
-                className="w-full bg-transparent border-none shadow-none h-full focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 outline-none"
+                className="w-full bg-transparent border-none shadow-none h-full focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 outline-none cursor-pointer"
                 placeholder="Scrivi un messaggio..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
