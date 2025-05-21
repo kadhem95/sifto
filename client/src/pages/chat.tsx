@@ -65,16 +65,14 @@ export default function Chat() {
     }
   }, [isInputFocused]);
   
-  // Funzione avanzata per scroll chat
+  // Funzione semplice per scroll chat
   const scrollToBottom = (instant = false) => {
     if (!messagesEndRef.current) return;
     
-    // Su mobile, assicuriamoci di dare precedenza allo scroll immediato
-    // con animazione minima per migliorare la reattività percepita
+    // Scroll semplice
     messagesEndRef.current.scrollIntoView({ 
       behavior: instant ? "auto" : "smooth",
-      block: "end",
-      inline: "nearest"
+      block: "end"
     });
   };
 
@@ -243,8 +241,8 @@ export default function Chat() {
 
         {/* Container scrollabile dei messaggi con padding fisso per evitare salti */}
         <div 
-          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-20"
-          style={{ backgroundColor: "#F7F7FC", overscrollBehavior: "contain" }}
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-24"
+          style={{ backgroundColor: "#F7F7FC" }}
         >
           {messages.map((message) => (
             <MessageItem
@@ -273,13 +271,14 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con input - semplificato */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10">          
-          {/* Input Area - disegno minimale e standard */}
+        {/* Footer con input - essenziale e minimalista */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 z-10">          
+          {/* Input Area - stile WhatsApp semplificato */}
           <div className="p-3 bg-white flex items-center">
-            <div className="flex-1 bg-neutral-100 rounded-full px-4 flex items-center" style={{minHeight: '48px'}}>
-              <textarea
-                className="w-full bg-transparent border-none shadow-none py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 resize-none overflow-hidden outline-none"
+            <div className="flex-1 bg-neutral-100 rounded-full px-4 flex items-center h-12">
+              <input
+                type="text"
+                className="w-full bg-transparent border-none shadow-none h-full focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 outline-none"
                 placeholder="Scrivi un messaggio..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
@@ -287,8 +286,6 @@ export default function Chat() {
                 onFocus={() => setIsInputFocused(true)}
                 onBlur={() => setIsInputFocused(false)}
                 autoComplete="off"
-                rows={1}
-                style={{height: 'auto', minHeight: '24px', maxHeight: '80px'}}
               />
             </div>
             <Button
