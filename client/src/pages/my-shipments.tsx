@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Rating } from "@/components/ui/rating";
 import { useAuth } from "@/hooks/use-auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 interface ShipmentData {
   id: string;
@@ -29,6 +30,7 @@ interface ShipmentData {
 export default function MyShipments() {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
+  const { toast } = useToast();
   // Determina quale tab mostrare inizialmente in base ai parametri URL o attività precedenti
   const [activeTab, setActiveTab] = useState<"packages" | "trips">(() => {
     // Controlla se siamo arrivati da un reindirizzamento con parametro specifico
@@ -38,6 +40,7 @@ export default function MyShipments() {
   });
   const [shipments, setShipments] = useState<ShipmentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchShipments = async () => {
