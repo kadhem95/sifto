@@ -114,11 +114,27 @@ export default function Chat() {
           if (participantProfile) {
             // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
             const profileData = participantProfile as any;
+            
+            // Determiniamo il vero nome dell'utente dalla fonte più affidabile disponibile
+            const userDisplayName = profileData.displayName || 
+                                    (profileData.phoneNumber ? `User (${profileData.phoneNumber.slice(-4)})` : 
+                                    (profileData.email ? profileData.email.split('@')[0] : participantId.slice(0, 8)));
+            
             setParticipant({
-              id: profileData.uid || "",
-              name: profileData.displayName || "Utente sconosciuto",
+              id: profileData.uid || participantId,
+              name: userDisplayName,
               photoURL: profileData.photoURL,
-              isOnline: true // Per scopi dimostrativi, mostriamo sempre come online
+              isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
+            });
+          } else {
+            // Fallback se il profilo non viene trovato
+            console.warn(`Profilo utente non trovato per l'ID: ${participantId}`);
+            
+            // Creazione di un partecipante con informazioni minime ma identificabili
+            setParticipant({
+              id: participantId,
+              name: `Utente (${participantId.slice(0, 8)}...)`,
+              isOnline: false
             });
           }
         }
@@ -234,9 +250,9 @@ export default function Chat() {
               </Avatar>
               <div className="ml-2.5 truncate">
                 <h3 className="text-neutral-900 font-medium text-sm truncate">{participant.name}</h3>
-                <div className="flex items-center">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
-                  <span className="text-xs text-neutral-500">Online</span>
+                {/* Rimuoviamo l'indicatore di stato online poiché non possiamo verificarlo */}
+                <div className="text-xs text-neutral-500 mt-0.5">
+                  {chatDetails?.packageId ? "Mittente pacco" : "Viaggiatore"}
                 </div>
               </div>
             </div>
