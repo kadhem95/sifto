@@ -515,7 +515,7 @@ export default function Profile() {
                   {isUploadingImage ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <User size={16} />
+                    <UserIcon size={16} />
                   )}
                 </button>
                 
