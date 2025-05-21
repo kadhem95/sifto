@@ -146,22 +146,26 @@ export default function MyShipments() {
       const shipmentsData: ShipmentData[] = [];
       
       try {
-        // 1. Recupera i pacchi dell'utente
-        const packagesQuery = query(
-          collection(db, "packages"),
-          where("userId", "==", currentUser.uid)
-        );
-        const packagesSnapshot = await getDocs(packagesQuery);
-        
-        for (const packageDoc of packagesSnapshot.docs) {
-          const packageData = packageDoc.data();
-          
-          // Verifica se il pacco ha un match
-          const matchesQuery = query(
-            collection(db, "matches"),
-            where("packageId", "==", packageDoc.id)
+        // Gestione degli errori migliorata
+        try {
+          // 1. Recupera i pacchi dell'utente
+          const packagesQuery = query(
+            collection(db, "packages"),
+            where("userId", "==", currentUser.uid)
           );
-          const matchesSnapshot = await getDocs(matchesQuery);
+          const packagesSnapshot = await getDocs(packagesQuery);
+          
+          for (const packageDoc of packagesSnapshot.docs) {
+            const packageData = packageDoc.data();
+            
+            // Verifica se il pacco ha un match
+            try {
+              const matchesQuery = query(
+                collection(db, "matches"),
+                where("packageId", "==", packageDoc.id)
+              );
+              const matchesSnapshot = await getDocs(matchesQuery);
+        
           
           let counterpart = undefined;
           

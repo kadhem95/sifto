@@ -11,7 +11,7 @@ import ReportTrip from "@/pages/report-trip";
 import TravelersList from "@/pages/travelers-list";
 import PackagesList from "@/pages/packages-list";
 import Chat from "@/pages/chat";
-import MyShipments from "@/pages/my-shipments";
+import MyShipments from "@/pages/my-shipments-simplified";
 import Review from "@/pages/review";
 import Profile from "@/pages/profile";
 import PackageDetails from "@/pages/package-details";
