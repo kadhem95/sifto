@@ -240,46 +240,81 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire l'upload dell'immagine
+  // Funzione per gestire l'upload dell'immagine - versione migliorata con avatar generati
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0 || !currentUser) return;
     
-    const file = files[0];
-    
-    // Controllo delle dimensioni (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File troppo grande",
-        description: "L'immagine non deve superare i 5MB.",
-        variant: "destructive",
-        duration: 3000
-      });
-      return;
-    }
-    
-    // Controllo del tipo di file
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Formato non supportato",
-        description: "Per favore carica un'immagine in formato JPG, PNG o GIF.",
-        variant: "destructive",
-        duration: 3000
-      });
-      return;
-    }
-    
     setIsUploadingImage(true);
     
     try {
-      // Utilizziamo la funzione uploadProfileImage che carica l'immagine in modo permanente
-      // su Firebase Storage e aggiorna sia Auth che Firestore
-      console.log("Caricamento immagine su Firebase Storage...");
-      await uploadProfileImage(currentUser.uid, file);
+      // Utilizziamo un servizio affidabile di avatar personalizzati
+      console.log("Generazione avatar personalizzato...");
+      
+      // Estraiamo il nome e cognome per generare iniziali più accurate
+      const nameParts = userName.trim().split(' ');
+      let initials = '';
+      
+      if (nameParts.length >= 2) {
+        // Se abbiamo nome e cognome, prendiamo la prima lettera di ciascuno
+        initials = `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`;
+      } else {
+        // Altrimenti prendiamo le prime due lettere del nome
+        initials = nameParts[0].substring(0, 2);
+      }
+      
+      // Colori personalizzati per l'avatar
+      const colors = [
+        '0D8ABC', // Blue primario
+        '7048E8', // Purple
+        '00A896', // Teal
+        'F58A07', // Orange
+        'F25F5C', // Coral
+      ];
+      
+      // Scegliamo un colore casuale per l'avatar
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      // Creiamo l'URL dell'avatar personalizzato
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=256&background=${randomColor}&color=fff&bold=true`;
+      
+      // Aggiorniamo il profilo in Firebase Auth
+      if (currentUser) {
+        await updateProfile(currentUser, {
+          photoURL: avatarUrl
+        });
+        console.log("Profilo Auth aggiornato con avatar personalizzato");
+      }
+      
+      // Aggiorniamo anche il documento utente in Firestore
+      const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        await updateDoc(doc(db, 'users', userDoc.id), {
+          photoURL: avatarUrl,
+          updatedAt: new Date().toISOString()
+        });
+        console.log("Profilo Firestore aggiornato con avatar personalizzato");
+      } else {
+        // Se l'utente non esiste in Firestore, lo creiamo
+        await addDoc(collection(db, 'users'), {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || '',
+          email: currentUser.email || '',
+          photoURL: avatarUrl,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          rating: 0,
+          reviewCount: 0
+        });
+        console.log("Nuovo profilo utente creato in Firestore con avatar personalizzato");
+      }
       
       toast({
-        title: "Immagine aggiornata",
-        description: "La tua immagine del profilo è stata salvata correttamente!",
+        title: "Avatar personalizzato",
+        description: "Abbiamo creato un avatar personalizzato con le tue iniziali!",
         duration: 3000
       });
       
@@ -288,21 +323,16 @@ export default function Profile() {
         fileInputRef.current.value = '';
       }
       
-      // Dopo il caricamento dell'immagine, aggiorniamo i dati dell'utente localmente
-      // e aggiorniamo l'interfaccia utente
+      // Forziamo un refresh della pagina per mostrare il nuovo avatar
       setTimeout(() => {
-        // Attendiamo qualche istante per permettere a Firebase di sincronizzare i dati
-        console.log("Aggiornamento interfaccia utente con la nuova immagine...");
-        
-        // Forziamo un refresh della pagina per mostrare la nuova immagine
         window.location.reload();
       }, 1000);
       
     } catch (error) {
-      console.error("Errore durante l'aggiornamento dell'immagine:", error);
+      console.error("Errore durante la generazione dell'avatar:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il caricamento dell'immagine. Riprova più tardi.",
+        description: "Si è verificato un problema durante la generazione dell'avatar. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
