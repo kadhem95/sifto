@@ -126,48 +126,28 @@ export default function SendPackage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Località di partenza */}
+          {/* Località di partenza con autocompletamento */}
           <div className="mb-4">
-            <Label htmlFor="from" className="block text-neutral-700 font-medium mb-2">Da</Label>
-            <div className="relative">
-              <Input
-                id="from"
-                className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-                placeholder="es. Milano"
-                {...register("from")}
-              />
-              <button type="button" className="absolute right-3 top-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-neutral-500"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-            {errors.from && (
-              <p className="text-red-500 text-sm mt-1">{errors.from.message}</p>
-            )}
+            <LocationInput
+              id="from"
+              label="Da"
+              placeholder="Seleziona la città di partenza"
+              value={watch("from")}
+              onChange={(value) => setValue("from", value, { shouldValidate: true })}
+              error={errors.from?.message}
+            />
           </div>
 
-          {/* Località di destinazione */}
+          {/* Località di destinazione con autocompletamento */}
           <div className="mb-4">
-            <Label htmlFor="to" className="block text-neutral-700 font-medium mb-2">A</Label>
-            <Input
+            <LocationInput
               id="to"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              placeholder="es. Tunisi"
-              {...register("to")}
+              label="A"
+              placeholder="Seleziona la città di destinazione"
+              value={watch("to")}
+              onChange={(value) => setValue("to", value, { shouldValidate: true })}
+              error={errors.to?.message}
             />
-            {errors.to && (
-              <p className="text-red-500 text-sm mt-1">{errors.to.message}</p>
-            )}
           </div>
 
           {/* Data di consegna */}
