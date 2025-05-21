@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
 import { LocationInput } from "@/components/ui/location-input";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const packageFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di origine"),
@@ -149,18 +150,13 @@ export default function SendPackage() {
             />
           </div>
 
-          <div className="mb-4">
-            <Label htmlFor="deadline" className="block text-neutral-700 font-medium mb-2">Entro quando</Label>
-            <Input
-              id="deadline"
-              type="date"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              {...register("deadline")}
-            />
-            {errors.deadline && (
-              <p className="text-red-500 text-sm mt-1">{errors.deadline.message}</p>
-            )}
-          </div>
+          {/* Data di consegna con selettore moderno */}
+          <DatePicker
+            label="Entro quando"
+            value={watch("deadline")}
+            onChange={(value) => setValue("deadline", value, { shouldValidate: true })}
+            error={errors.deadline?.message}
+          />
 
           <div className="mb-4">
             <Label htmlFor="description" className="block text-neutral-700 font-medium mb-2">Descrizione del pacco</Label>

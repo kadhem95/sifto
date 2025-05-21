@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { createTrip } from "@/lib/firebase";
 import { LocationInput } from "@/components/ui/location-input";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // Schema del viaggio
 const tripFormSchema = z.object({
@@ -123,19 +124,13 @@ export default function ReportTrip() {
             />
           </div>
 
-          {/* Campo Data */}
-          <div className="mb-4">
-            <Label htmlFor="date" className="block text-neutral-700 font-medium mb-2">Data di viaggio</Label>
-            <Input
-              id="date"
-              type="date"
-              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-              {...register("date")}
-            />
-            {errors.date && (
-              <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
-            )}
-          </div>
+          {/* Data di viaggio con selettore moderno */}
+          <DatePicker
+            label="Data di viaggio"
+            value={watch("date")}
+            onChange={(value) => setValue("date", value, { shouldValidate: true })}
+            error={errors.date?.message}
+          />
 
           {/* Campo Capacità */}
           <div className="mb-6">
