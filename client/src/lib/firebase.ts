@@ -140,20 +140,56 @@ export const createUserProfile = async (userId: string, userData: any) => {
 
 export const getUserProfile = async (userId: string) => {
   try {
+    // Primo tentativo: cerca il profilo nel database Firestore
     const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
     const userSnapshot = await getDocs(userQuery);
     
-    if (userSnapshot.empty) {
-      return null;
+    // Recupera anche le informazioni da Firebase Auth se possibile
+    let authUserInfo = null;
+    if (auth.currentUser && auth.currentUser.uid === userId) {
+      authUserInfo = {
+        displayName: auth.currentUser.displayName,
+        email: auth.currentUser.email,
+        photoURL: auth.currentUser.photoURL,
+        phoneNumber: auth.currentUser.phoneNumber
+      };
     }
     
-    return {
-      id: userSnapshot.docs[0].id,
-      ...userSnapshot.docs[0].data()
-    };
+    if (!userSnapshot.empty) {
+      // Abbiamo trovato il profilo in Firestore
+      const firestoreData = userSnapshot.docs[0].data();
+      
+      // Fondiamo i dati di Firestore con quelli di Auth (Auth ha priorità)
+      const mergedData = {
+        id: userSnapshot.docs[0].id,
+        ...firestoreData,
+        // Usiamo i dati di Auth se disponibili, altrimenti manteniamo quelli di Firestore
+        ...(authUserInfo ? {
+          displayName: authUserInfo.displayName || firestoreData.displayName,
+          photoURL: authUserInfo.photoURL || firestoreData.photoURL,
+        } : {})
+      };
+      
+      return mergedData;
+    } else if (authUserInfo && (authUserInfo.displayName || authUserInfo.photoURL)) {
+      // Non abbiamo trovato il profilo in Firestore, ma abbiamo informazioni da Auth
+      console.log(`Recupero solo da Auth per l'utente ${userId}:`, authUserInfo);
+      
+      // Creiamo un profilo base con i dati disponibili
+      return {
+        uid: userId,
+        displayName: authUserInfo.displayName || "",
+        photoURL: authUserInfo.photoURL || "",
+        createdAt: new Date().toISOString()
+      };
+    }
+    
+    // Nessun profilo trovato né in Firestore né in Auth
+    console.warn(`Nessun profilo utente trovato per l'ID: ${userId}`);
+    return null;
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    throw error;
+    return null; // Restituiamo null invece di lanciare l'errore per una gestione più robusta
   }
 };
 

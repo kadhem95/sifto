@@ -75,24 +75,29 @@ export default function ChatList() {
           // Trova l'altro utente
           const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
           
-          // Ottieni dati utente
-          let otherUserName = "Utente";
+          // Ottieni dati utente usando la funzione migliorata dalla lib/firebase
+          let otherUserName = "";
           let otherUserPhoto = undefined;
           
           try {
-            const userQuery = query(
-              collection(db, "users"),
-              where("uid", "==", otherUserId)
-            );
-            const userSnapshot = await getDocs(userQuery);
+            // Utilizziamo la funzione getUserProfile migliorata per ottenere i dati più aggiornati
+            const userProfile = await getUserProfile(otherUserId);
             
-            if (!userSnapshot.empty) {
-              const userData = userSnapshot.docs[0].data();
-              otherUserName = userData.displayName || "Utente";
-              otherUserPhoto = userData.photoURL;
+            if (userProfile) {
+              // Se il profilo esiste, prendiamo il nome visualizzato
+              otherUserName = userProfile.displayName || "";
+              otherUserPhoto = userProfile.photoURL;
+            }
+            
+            // Fallback se non abbiamo un nome (questo garantisce che abbiamo sempre un nome visualizzato)
+            if (!otherUserName) {
+              // Creiamo un identificativo univoco basato sull'ID utente
+              otherUserName = `Utente (${otherUserId.slice(0, 6)}...)`;
             }
           } catch (error) {
             console.error("Errore nel recupero utente:", error);
+            // Fallback in caso di errore
+            otherUserName = `Utente (${otherUserId.slice(0, 6)}...)`;
           }
           
           // Recupera l'ultimo messaggio
