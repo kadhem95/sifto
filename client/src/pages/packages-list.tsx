@@ -57,17 +57,19 @@ export default function PackagesList() {
           id: doc.id,
           ...doc.data()
         }));
-        const latestTrip = trips.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )[0];
+        const latestTrip = trips.sort((a, b) => {
+          const dateA = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          const dateB = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          return dateA - dateB;
+        })[0];
         
         setTripDetails(latestTrip);
         
         // Fetch matching packages
         const packagesQuery = query(
           collection(db, "packages"),
-          where("from", "==", latestTrip.from),
-          where("to", "==", latestTrip.to),
+          where("from", "==", latestTrip.from || ""),
+          where("to", "==", latestTrip.to || ""),
           where("status", "==", "pending")
         );
         const packagesSnapshot = await getDocs(packagesQuery);

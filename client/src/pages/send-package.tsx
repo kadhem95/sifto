@@ -304,9 +304,12 @@ export default function SendPackage() {
                 Elaborazione in corso...
               </div>
             ) : (
-              "Pubblica il pacco"
+              "Pubblica richiesta"
             )}
           </Button>
+          <p className="text-sm text-center text-neutral-500 mb-4">
+            Una volta pubblicata la richiesta, i viaggiatori compatibili potranno accettarla e contattarti.
+          </p>
         </form>
       </div>
     </AppLayout>
