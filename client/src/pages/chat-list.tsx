@@ -9,8 +9,6 @@ import {
   where, 
   getDocs, 
   orderBy, 
-  onSnapshot,
-  Timestamp,
   doc,
   getDoc
 } from "firebase/firestore";
@@ -18,14 +16,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 
+interface MessagePreview {
+  content: string;
+  timestamp: string;
+  senderId: string;
+  type?: string;
+}
+
 interface ChatPreview {
   id: string;
-  lastMessage: {
-    content: string;
-    timestamp: string;
-    senderId: string;
-    type?: string;
-  };
+  lastMessage: MessagePreview;
   otherUser: {
     id: string;
     name: string;
@@ -41,6 +41,7 @@ export default function ChatList() {
   const { currentUser } = useAuth();
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -48,26 +49,33 @@ export default function ChatList() {
       return;
     }
 
-    setIsLoading(true);
+    const loadChatRooms = async () => {
+      setIsLoading(true);
+      setErrorMsg(null);
 
-    // Query per trovare tutte le chat room dell'utente corrente
-    const chatRoomsQuery = query(
-      collection(db, "chatRooms"),
-      where("users", "array-contains", currentUser.uid),
-      // Ordina per ultimo messaggio (se implementiamo questo campo nella chatRoom)
-      orderBy("updatedAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(chatRoomsQuery, async (snapshot) => {
       try {
-        const chatPreviewsPromises = snapshot.docs.map(async (chatDoc) => {
+        // Query per trovare tutte le chat room dell'utente
+        const chatRoomsQuery = query(
+          collection(db, "chatRooms"),
+          where("users", "array-contains", currentUser.uid)
+        );
+        
+        const querySnapshot = await getDocs(chatRoomsQuery);
+        
+        if (querySnapshot.empty) {
+          setChats([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        const chatPreviewsPromises = querySnapshot.docs.map(async (chatDoc) => {
           const chatData = chatDoc.data();
           const chatId = chatDoc.id;
           
-          // Trova l'altro utente nella chat
+          // Trova l'altro utente
           const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
           
-          // Ottieni i dati dell'altro utente
+          // Ottieni dati utente
           let otherUserName = "Utente";
           let otherUserPhoto = undefined;
           
@@ -84,42 +92,47 @@ export default function ChatList() {
               otherUserPhoto = userData.photoURL;
             }
           } catch (error) {
-            console.error("Errore nel recupero dei dati utente:", error);
+            console.error("Errore nel recupero utente:", error);
           }
           
-          // Recupera l'ultimo messaggio della chat
-          const messagesQuery = query(
-            collection(db, "chatRooms", chatId, "messages"),
-            orderBy("timestamp", "desc")
-          );
-          
-          const messagesSnapshot = await getDocs(messagesQuery);
-          
+          // Recupera l'ultimo messaggio
           let lastMessage = {
             content: "Nessun messaggio",
             timestamp: chatData.createdAt || new Date().toISOString(),
-            senderId: "system"
+            senderId: "system",
+            type: "text"
           };
           
           let unreadCount = 0;
           
-          if (!messagesSnapshot.empty) {
-            const messageData = messagesSnapshot.docs[0].data();
-            lastMessage = {
-              content: messageData.content,
-              timestamp: messageData.timestamp,
-              senderId: messageData.senderId,
-              type: messageData.type
-            };
+          try {
+            const messagesQuery = query(
+              collection(db, "chatRooms", chatId, "messages"),
+              orderBy("timestamp", "desc")
+            );
             
-            // Conta i messaggi non letti (quelli inviati dall'altro utente e non contrassegnati come letti)
-            unreadCount = messagesSnapshot.docs.filter(doc => {
-              const data = doc.data();
-              return data.senderId === otherUserId && !data.readBy?.includes(currentUser.uid);
-            }).length;
+            const messagesSnapshot = await getDocs(messagesQuery);
+            
+            if (!messagesSnapshot.empty) {
+              const messageData = messagesSnapshot.docs[0].data();
+              lastMessage = {
+                content: messageData.content,
+                timestamp: messageData.timestamp,
+                senderId: messageData.senderId,
+                type: messageData.type || "text"
+              };
+              
+              // Conta messaggi non letti
+              unreadCount = messagesSnapshot.docs.filter(doc => {
+                const data = doc.data();
+                return data.senderId === otherUserId && !data.readBy?.includes(currentUser.uid);
+              }).length;
+            }
+          } catch (error) {
+            console.error("Errore nel recupero messaggi:", error);
           }
           
-          // Dettagli aggiuntivi: pacchetto o viaggio associato
+          // Dettagli pacchetto/viaggio
           let packageDetails = null;
           let tripDetails = null;
           
@@ -130,7 +143,7 @@ export default function ChatList() {
                 packageDetails = packageDoc.data();
               }
             } catch (error) {
-              console.error("Errore nel recupero dei dettagli del pacco:", error);
+              console.error("Errore dettagli pacco:", error);
             }
           }
           
@@ -141,11 +154,11 @@ export default function ChatList() {
                 tripDetails = tripDoc.data();
               }
             } catch (error) {
-              console.error("Errore nel recupero dei dettagli del viaggio:", error);
+              console.error("Errore dettagli viaggio:", error);
             }
           }
           
-          // Formatta il contenuto dell'ultimo messaggio in base al tipo
+          // Formatta contenuto
           let formattedContent = lastMessage.content;
           if (lastMessage.type === "location") {
             formattedContent = "📍 Posizione condivisa";
@@ -153,10 +166,9 @@ export default function ChatList() {
             formattedContent = "⚡ Azione rapida";
           }
           
-          // Determina il nome da visualizzare nella preview della chat
+          // Nome chat
           let chatName = otherUserName;
           if (packageDetails && tripDetails) {
-            // Se sono disponibili sia il pacco che il viaggio, usa entrambi per il nome della chat
             chatName = `${otherUserName} • ${packageDetails.from} → ${packageDetails.to}`;
           }
 
@@ -177,9 +189,10 @@ export default function ChatList() {
           };
         });
         
+        // Risolve tutte le promesse
         const chatPreviews = await Promise.all(chatPreviewsPromises);
         
-        // Ordina per data dell'ultimo messaggio (più recente prima)
+        // Ordina per data ultimo messaggio
         chatPreviews.sort((a, b) => {
           const dateA = new Date(a.lastMessage.timestamp).getTime();
           const dateB = new Date(b.lastMessage.timestamp).getTime();
@@ -188,23 +201,23 @@ export default function ChatList() {
         
         setChats(chatPreviews);
       } catch (error) {
-        console.error("Errore nel recupero delle chat:", error);
+        console.error("Errore caricamento chat:", error);
+        setErrorMsg("Impossibile caricare le conversazioni. Riprova più tardi.");
       } finally {
         setIsLoading(false);
       }
-    });
-
-    // Cleanup della subscription quando il componente viene smontato
-    return () => unsubscribe();
+    };
+    
+    loadChatRooms();
   }, [currentUser, navigate]);
 
-  // Funzione per formattare la data relativa (es. "2 ore fa")
+  // Formatta data relativa
   const formatRelativeTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
       return formatDistanceToNow(date, { addSuffix: true, locale: it });
     } catch (e) {
-      return timestamp;
+      return "recentemente";
     }
   };
 
@@ -219,6 +232,22 @@ export default function ChatList() {
               <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-neutral-500">Caricamento conversazioni...</p>
             </div>
+          </div>
+        ) : errorMsg ? (
+          <div className="text-center py-10">
+            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium mb-2">Si è verificato un errore</h3>
+            <p className="text-neutral-500 max-w-xs mx-auto mb-6">{errorMsg}</p>
+            <button 
+              className="bg-primary text-white px-4 py-2 rounded-md"
+              onClick={() => window.location.reload()}
+            >
+              Riprova
+            </button>
           </div>
         ) : chats.length === 0 ? (
           <div className="text-center py-10">
