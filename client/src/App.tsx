@@ -19,6 +19,7 @@ import TripDetails from "@/pages/trip-details";
 import EditPackage from "@/pages/edit-package";
 import EditTrip from "@/pages/edit-trip";
 import CompatiblePackages from "@/pages/compatible-packages";
+import ChatList from "@/pages/chat-list";
 import { AuthProvider } from "./context/auth-context";
 import { useEffect } from "react";
 import { auth } from "./lib/firebase";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/travelers" component={TravelersList} />
       <Route path="/packages" component={PackagesList} />
       <Route path="/chat/:id" component={Chat} />
+      <Route path="/messages" component={ChatList} />
       <Route path="/my-shipments" component={MyShipments} />
       <Route path="/review/:id" component={Review} />
       <Route path="/profile" component={Profile} />
