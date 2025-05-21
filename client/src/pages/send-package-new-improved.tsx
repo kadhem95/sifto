@@ -91,8 +91,8 @@ export default function SendPackage() {
         await uploadPackageImage(packageRef.id, imageFile);
       }
 
-      // Navigate to the travelers list screen
-      navigate("/travelers");
+      // Reindirizza l'utente alla sezione "Le mie attività" con il tab dei pacchi attivo
+      navigate("/my-shipments?tab=packages");
     } catch (error) {
       console.error("Error creating package:", error);
     } finally {

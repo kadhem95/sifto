@@ -65,8 +65,8 @@ export default function ReportTrip() {
         createdAt: new Date().toISOString(),
       });
 
-      // Navigate to the packages list screen
-      navigate("/packages");
+      // Reindirizza l'utente alla sezione "Le mie attività" con il tab dei viaggi attivo
+      navigate("/my-shipments?tab=trips");
     } catch (error) {
       console.error("Error creating trip:", error);
     } finally {

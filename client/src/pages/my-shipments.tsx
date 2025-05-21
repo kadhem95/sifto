@@ -318,7 +318,7 @@ export default function MyShipments() {
                       <div className="flex justify-between items-center mb-3">
                         <div>
                           <p className="text-neutral-900 font-medium">{shipment.from} → {shipment.to}</p>
-                          <p className="text-sm text-neutral-500">by {formatDate(shipment.date)}</p>
+                          <p className="text-sm text-neutral-500">entro il {formatDate(shipment.date)}</p>
                         </div>
                         {getStatusBadge(shipment.status)}
                       </div>
@@ -331,8 +331,8 @@ export default function MyShipments() {
                               <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Carried by {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ offered</p>
+                              <p className="text-sm text-neutral-900">Trasportato da {shipment.counterpart.name}</p>
+                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ offerti</p>
                             </div>
                           </div>
                           <Button
@@ -372,8 +372,8 @@ export default function MyShipments() {
                               <AvatarFallback>{shipment.counterpart.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="ml-2">
-                              <p className="text-sm text-neutral-900">Carried by {shipment.counterpart.name}</p>
-                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ paid</p>
+                              <p className="text-sm text-neutral-900">Trasportato da {shipment.counterpart.name}</p>
+                              <p className="text-xs text-neutral-500">{shipment.counterpart.price}€ pagati</p>
                             </div>
                           </div>
                           <div className="ml-auto">
