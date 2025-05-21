@@ -1,21 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { allCities, formatCityDisplay } from '@/data/cities';
+import { italianCities, northAfricanCities } from '@/data/cities';
 
+// Definizione chiara dei tipi
 interface City {
   name: string;
-  province?: string;
+  province?: string | undefined;
   country: string;
 }
 
-type LocationInputProps = {
+// Formatta il testo di visualizzazione della città
+function formatCityDisplay(city: City): string {
+  if (city.province) {
+    return `${city.name} (${city.province})`;
+  }
+  return `${city.name}, ${city.country}`;
+}
+
+// Lista completa delle città
+const allCities: City[] = [...italianCities, ...northAfricanCities];
+
+interface LocationInputProps {
   id: string;
   label: string;
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
-};
+}
 
 export function LocationInput({
   id,
@@ -25,80 +37,83 @@ export function LocationInput({
   onChange,
   error
 }: LocationInputProps) {
+  // Stati interni del componente
   const [inputValue, setInputValue] = useState(value || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<City[]>([]);
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Sincronizza lo stato interno quando cambia il valore esterno
   useEffect(() => {
-    if (value !== inputValue && !selectedCity) {
+    if (value !== inputValue) {
       setInputValue(value || '');
     }
   }, [value]);
 
-  // Gestisce il click fuori dal componente
+  // Gestisce il click fuori dal componente per chiudere i suggerimenti
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
-        
-        // Se l'utente non ha selezionato una città validata, ripristina l'ultima valida
-        if (selectedCity) {
-          setInputValue(formatCityDisplay(selectedCity));
-        } else if (value) {
-          setInputValue(value);
-        } else {
-          setInputValue('');
-        }
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedCity, value]);
+  }, []);
 
-  // Aggiorna i suggerimenti quando l'utente digita
-  const filterSuggestions = (text: string) => {
-    if (!text.trim()) {
-      return [];
-    }
+  // Filtra i suggerimenti in base al testo inserito
+  const filterCities = (text: string): City[] => {
+    const filteredList = allCities.filter(city => {
+      const searchText = text.toLowerCase();
+      const cityName = city.name.toLowerCase();
+      const cityCountry = city.country.toLowerCase();
+      const cityProvince = city.province ? city.province.toLowerCase() : '';
+      
+      return cityName.includes(searchText) || 
+             cityCountry.includes(searchText) || 
+             cityProvince.includes(searchText);
+    });
     
-    // Filtra le città che contengono il testo digitato (case insensitive)
-    return allCities
-      .filter(city => {
-        const cityName = city.name.toLowerCase();
-        const cityProvince = city.province ? city.province.toLowerCase() : '';
-        const cityCountry = city.country.toLowerCase();
-        const searchText = text.toLowerCase();
-        
-        return cityName.includes(searchText) || 
-               cityProvince.includes(searchText) || 
-               cityCountry.includes(searchText);
-      })
-      .slice(0, 8); // Limita a 8 suggerimenti
+    return filteredList.slice(0, 8); // Limita a 8 risultati
   };
 
+  // Gestisce il cambio di input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     
-    // Aggiorna i suggerimenti
-    const newSuggestions = filterSuggestions(newValue);
-    setSuggestions(newSuggestions);
-    setShowSuggestions(newSuggestions.length > 0);
-    
-    // Resetta la selezione se l'utente cambia il testo
-    setSelectedCity(null);
+    if (newValue.trim()) {
+      const filtered = filterCities(newValue);
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      // Se il campo è vuoto, mostra le prime città
+      setSuggestions(allCities.slice(0, 8));
+      setShowSuggestions(true);
+    }
   };
 
+  // Gestisce la selezione di una città dal dropdown
   const handleSelectCity = (city: City) => {
-    const cityString = formatCityDisplay(city);
-    setInputValue(cityString);
-    setSelectedCity(city);
+    const displayValue = formatCityDisplay(city);
+    setInputValue(displayValue);
+    onChange(displayValue);
     setShowSuggestions(false);
-    onChange(cityString);
+  };
+
+  // Mostra i suggerimenti quando l'input riceve il focus
+  const handleFocus = () => {
+    // Se c'è già del testo, filtra i suggerimenti
+    if (inputValue.trim()) {
+      const filtered = filterCities(inputValue);
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      // Altrimenti mostra le città più popolari
+      setSuggestions(allCities.slice(0, 8));
+      setShowSuggestions(true);
+    }
   };
 
   return (
@@ -114,39 +129,13 @@ export function LocationInput({
           placeholder={placeholder}
           value={inputValue}
           onChange={handleInputChange}
-          onClick={() => {
-            // Mostra sempre i primi suggerimenti quando si clicca sul campo
-            // Se l'utente ha già iniziato a digitare, usa il filtro
-            if (inputValue.length > 0) {
-              const suggestions = filterSuggestions(inputValue);
-              setSuggestions(suggestions);
-              setShowSuggestions(suggestions.length > 0);
-            } else {
-              // Mostra le città più popolari come suggerimento iniziale
-              const popularCities = allCities.slice(0, 8);
-              setSuggestions(popularCities);
-              setShowSuggestions(true);
-            }
-          }}
-          onFocus={() => {
-            // Mostra sempre i primi suggerimenti quando si seleziona il campo
-            // Se l'utente ha già iniziato a digitare, usa il filtro
-            if (inputValue.length > 0) {
-              const suggestions = filterSuggestions(inputValue);
-              setSuggestions(suggestions);
-              setShowSuggestions(suggestions.length > 0);
-            } else {
-              // Mostra le città più popolari come suggerimento iniziale
-              const popularCities = allCities.slice(0, 8);
-              setSuggestions(popularCities);
-              setShowSuggestions(true);
-            }
-          }}
+          onFocus={handleFocus}
+          onClick={handleFocus}
           autoComplete="off"
         />
         
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-20 left-0 right-0 mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
+          <div className="absolute z-50 left-0 right-0 mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
             {suggestions.map((city, index) => (
               <div
                 key={index}
@@ -159,7 +148,7 @@ export function LocationInput({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <div className="font-medium flex-1">{formatCityDisplay(city)}</div>
+                <div className="font-medium">{formatCityDisplay(city)}</div>
               </div>
             ))}
           </div>
