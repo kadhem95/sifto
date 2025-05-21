@@ -91,7 +91,19 @@ export default function ChatList() {
             
             // Prendiamo i dati che ci servono
             otherUserName = profileData.displayName || `Utente (${otherUserId.slice(0, 6)})`;
-            otherUserPhoto = profileData.photoURL;
+            
+            // Assicuriamoci di ottenere l'URL della foto più recente
+            // Se c'è un photoURL, aggiungiamo un timestamp per evitare problemi di cache
+            if (profileData.photoURL) {
+              // Controlliamo se l'URL già contiene parametri di query
+              const hasQueryParams = profileData.photoURL.includes('?');
+              const separator = hasQueryParams ? '&' : '?';
+              // Aggiungiamo un timestamp per forzare il refresh dell'immagine
+              otherUserPhoto = `${profileData.photoURL}${separator}t=${Date.now()}`;
+              console.log(`Immagine profilo per ${otherUserName}:`, otherUserPhoto);
+            } else {
+              otherUserPhoto = undefined;
+            }
             
             console.log(`Chat-list: Recuperato profilo per ${otherUserId}: ${otherUserName}`);
             

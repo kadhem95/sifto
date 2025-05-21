@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, UserCircle, Upload } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
-import { db, uploadProfileImage } from "@/lib/firebase";
+import { db, uploadProfileImage, auth } from "@/lib/firebase";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -272,39 +272,42 @@ export default function Profile() {
     setIsUploadingImage(true);
     
     try {
-      // Metodo più semplice: aggiorna direttamente il profilo Firebase Auth
-      // Creiamo un URL temporaneo per l'immagine caricata
-      const imageUrl = URL.createObjectURL(file);
-      
-      // Aggiorniamo il profilo utente
-      await updateProfile(currentUser, {
-        photoURL: imageUrl
-      });
+      // Utilizziamo la funzione uploadProfileImage che carica l'immagine in modo permanente
+      // su Firebase Storage e aggiorna sia Auth che Firestore
+      console.log("Caricamento immagine su Firebase Storage...");
+      await uploadProfileImage(currentUser.uid, file);
       
       toast({
         title: "Immagine aggiornata",
-        description: "La tua immagine del profilo è stata aggiornata temporaneamente.",
+        description: "La tua immagine del profilo è stata salvata correttamente!",
         duration: 3000
       });
-      
-      // Note: in un'implementazione completa con Firebase Storage funzionante,
-      // utilizzeremmo la funzione uploadProfileImage qui
       
       // Pulizia del campo input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       
-      // Forziamo un aggiornamento della pagina dopo un breve ritardo
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // Dopo il caricamento dell'immagine, aggiorniamo i dati dell'utente localmente
+      // senza dover ricaricare la pagina
+      if (currentUser && currentUser.photoURL) {
+        // Forziamo un refresh dell'immagine aggiungendo un timestamp come query parameter
+        // Questo evita problemi di caching del browser
+        const refreshedImageUrl = `${currentUser.photoURL}?t=${Date.now()}`;
+        console.log("Immagine salvata con URL:", refreshedImageUrl);
+        
+        // Aggiorniamo l'avatar senza ricaricare la pagina
+        const avatarImage = document.querySelector('.avatar img') as HTMLImageElement;
+        if (avatarImage) {
+          avatarImage.src = refreshedImageUrl;
+        }
+      }
       
     } catch (error) {
       console.error("Errore durante l'aggiornamento dell'immagine:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'aggiornamento dell'immagine. Riprova più tardi.",
+        description: "Si è verificato un errore durante il caricamento dell'immagine. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
