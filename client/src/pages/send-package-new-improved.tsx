@@ -61,6 +61,8 @@ export default function SendPackage() {
     }
   };
 
+  const { toast } = useToast();
+  
   const onSubmit = async (data: PackageFormValues) => {
     if (!currentUser) {
       navigate("/login");
@@ -75,8 +77,8 @@ export default function SendPackage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Creiamo prima il documento del pacco
-      const packageRef = await createPackage({
+      // Step 1: Creare il documento del pacco
+      const packageData = {
         userId: currentUser.uid,
         from: data.from,
         to: data.to,
@@ -84,34 +86,35 @@ export default function SendPackage() {
         description: data.description,
         dimensions: data.dimensions || "",
         price: data.price,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      });
-
-      // Step 2: Avviamo il caricamento dell'immagine ma NON attendiamo
-      if (imageFile && packageRef.id) {
-        // Avviare il caricamento in background senza attendere
+        status: 'pending'
+      };
+      
+      // Usiamo la funzione helper che abbiamo già
+      const newPackage = await createPackage(packageData);
+      
+      // Step 2: Avviare il caricamento dell'immagine in background
+      if (imageFile && newPackage && newPackage.id) {
+        // Non usare await qui - avvia il caricamento ma non aspettare che finisca
         setTimeout(() => {
-          uploadPackageImage(packageRef.id, imageFile)
-            .catch(err => console.error("Errore caricamento immagine:", err));
-        }, 100);
+          uploadPackageImage(newPackage.id, imageFile)
+            .catch(error => console.error("Errore caricamento immagine:", error));
+        }, 0);
       }
-
-      // Step 3: Mostra messaggio di successo
+      
+      // Step 3: Mostra una notifica di successo
       toast({
-        title: "Pacco pubblicato con successo!",
-        description: "Stai per essere reindirizzato alla sezione 'Le mie attività'",
-        variant: "default"
+        title: "Pacco pubblicato!",
+        description: "Il tuo annuncio è stato pubblicato con successo",
       });
-
-      // Step 4: Reindirizza IMMEDIATAMENTE (prima del caricamento immagine)
+      
+      // Step 4: Reindirizza immediatamente (prima che l'immagine finisca di caricare)
       setIsLoading(false);
       navigate("/my-shipments?tab=packages");
     } catch (error) {
       console.error("Errore durante la creazione del pacco:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante la pubblicazione. Riprova.",
+        description: "Si è verificato un errore durante la pubblicazione",
         variant: "destructive"
       });
       setIsLoading(false);
