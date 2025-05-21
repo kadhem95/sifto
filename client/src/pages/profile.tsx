@@ -348,7 +348,7 @@ export default function Profile() {
               <Avatar className="w-24 h-24 mb-4">
                 {/* Forziamo un refresh dell'URL dell'immagine con un timestamp per evitare la cache */}
                 <AvatarImage 
-                  src={`${userProfile?.photoURL || currentUser?.photoURL || ''}?t=${Date.now()}`} 
+                  src={userProfile?.photoURL || currentUser?.photoURL || ''}
                   alt={userName}
                   className="object-cover"
                   onError={(e) => {
