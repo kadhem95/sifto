@@ -61,16 +61,23 @@ export default function Chat() {
   useEffect(() => {
     if (isInputFocused) {
       // Assicuriamo che la vista si sposti immediatamente quando la tastiera si apre
-      scrollToBottom(true);
+      // Aggiungiamo un piccolo ritardo per dare tempo alla tastiera di aprirsi completamente
+      setTimeout(() => {
+        scrollToBottom(true);
+      }, 300);
     }
   }, [isInputFocused]);
   
   // Funzione avanzata per scroll chat
   const scrollToBottom = (instant = false) => {
     if (!messagesEndRef.current) return;
+    
+    // Su mobile, assicuriamoci di dare precedenza allo scroll immediato
+    // con animazione minima per migliorare la reattività percepita
     messagesEndRef.current.scrollIntoView({ 
       behavior: instant ? "auto" : "smooth",
-      block: "end" 
+      block: "end",
+      inline: "nearest"
     });
   };
 
@@ -237,9 +244,9 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Container scrollabile dei messaggi con padding che si adatta in base al focus dell'input */}
+        {/* Container scrollabile dei messaggi con padding fisso per evitare salti */}
         <div 
-          className={`flex-1 overflow-y-auto p-2 md:p-3 pt-4 ${isInputFocused ? 'pb-16' : 'pb-20'}`}
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-20"
           style={{ backgroundColor: "#F7F7FC", overscrollBehavior: "contain" }}
         >
           {messages.map((message) => (
@@ -269,20 +276,32 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con input - fisso in basso stile WhatsApp */}
-        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-150 ${isInputFocused ? "pb-1" : ""}`}>          
+        {/* Footer con input - fisso in basso stile WhatsApp con gestione keyboard */}
+        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-200`} 
+             style={{ 
+               transform: isInputFocused ? 'translateY(-4px)' : 'translateY(0)',
+               willChange: 'transform'
+             }}>          
           {/* Input Area - con gestione del focus */}
-          <div className="p-2 pb-3 bg-white flex items-center">
+          <div className="p-2 pt-3 pb-3 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[48px] flex items-center">
-              <Input
-                className="w-full bg-transparent border-none shadow-none h-auto py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400"
+              <textarea
+                className="w-full bg-transparent border-none shadow-none py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400 resize-none overflow-hidden max-h-[120px] outline-none"
                 placeholder="Scrivi un messaggio..."
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  // Auto-resize della textarea in base al contenuto
+                  e.target.style.height = 'auto';
+                  const newHeight = Math.min(e.target.scrollHeight, 120); // Limita a 120px max
+                  e.target.style.height = `${newHeight}px`;
+                }}
                 onKeyDown={handleKeyPress}
                 onFocus={() => setIsInputFocused(true)}
                 onBlur={() => setIsInputFocused(false)}
                 autoComplete="off"
+                rows={1}
+                style={{minHeight: '24px'}}
               />
             </div>
             <Button
