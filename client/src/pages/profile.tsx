@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, UserCircle, Upload } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
-import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, uploadProfileImage } from "@/lib/firebase";
 
 export default function Profile() {

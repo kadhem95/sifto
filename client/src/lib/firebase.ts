@@ -42,9 +42,46 @@ export const registerWithEmail = async ({ email, password, displayName }: Regist
     console.log(`Attempting to register user with email: ${email}`);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
-    // Update profile with display name if provided
-    if (displayName && userCredential.user) {
-      await updateProfile(userCredential.user, { displayName });
+    // Assicuriamoci che ci sia sempre un nome visualizzato, anche se l'utente non ne ha fornito uno
+    const finalDisplayName = displayName?.trim() || email.split('@')[0];
+    
+    // Update profile with display name 
+    if (userCredential.user) {
+      await updateProfile(userCredential.user, { displayName: finalDisplayName });
+      console.log(`Profile display name set to: ${finalDisplayName}`);
+      
+      // Creiamo anche un profilo utente in Firestore per garantire coerenza
+      try {
+        const userData = {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          displayName: finalDisplayName,
+          createdAt: new Date().toISOString(),
+          rating: 0,
+          reviewCount: 0
+        };
+        
+        // Verifichiamo prima se esiste già un profilo per questo utente
+        const userQuery = query(collection(db, 'users'), where('uid', '==', userCredential.user.uid));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (userSnapshot.empty) {
+          // Se non esiste, creiamo un nuovo profilo
+          const userDocRef = await addDoc(collection(db, 'users'), userData);
+          console.log(`Created user profile in Firestore: ${userDocRef.id}`);
+        } else {
+          // Se esiste già, lo aggiorniamo
+          const userDoc = userSnapshot.docs[0];
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            displayName: finalDisplayName,
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`Updated existing user profile in Firestore`);
+        }
+      } catch (profileError) {
+        console.error("Error creating user profile in Firestore:", profileError);
+        // Continuiamo comunque con il processo di registrazione
+      }
     }
     
     console.log("User registered successfully");
@@ -71,6 +108,66 @@ export const loginWithEmail = async (email: string, password: string) => {
     console.log(`Attempting to login user with email: ${email}`);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     console.log("User logged in successfully");
+    
+    // Verifichiamo se l'utente ha un profilo in Firestore
+    // e lo creiamo/aggiorniamo se necessario per garantire consistenza
+    if (userCredential.user) {
+      // Assicuriamoci che ci sia sempre un nome visualizzato
+      const userName = userCredential.user.displayName || email.split('@')[0];
+      
+      try {
+        // Verifichiamo se esiste già un profilo per questo utente
+        const userQuery = query(collection(db, 'users'), where('uid', '==', userCredential.user.uid));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (userSnapshot.empty) {
+          // Se non esiste, creiamo un nuovo profilo
+          // Questo garantisce che ogni utente abbia sempre un profilo in Firestore
+          const userData = {
+            uid: userCredential.user.uid,
+            email: userCredential.user.email,
+            displayName: userName,
+            createdAt: new Date().toISOString(),
+            rating: 0,
+            reviewCount: 0
+          };
+          
+          const userDocRef = await addDoc(collection(db, 'users'), userData);
+          console.log(`Created user profile in Firestore during login: ${userDocRef.id}`);
+          
+          // Assicuriamoci che il nome sia impostato anche in Auth
+          if (!userCredential.user.displayName) {
+            await updateProfile(userCredential.user, { displayName: userName });
+            console.log(`Updated Auth profile with name: ${userName}`);
+          }
+        } else {
+          // Se esiste, verifichiamo che i dati siano aggiornati
+          const userDoc = userSnapshot.docs[0];
+          const userData = userDoc.data();
+          
+          // Se il nome nell'auth è diverso da quello in Firestore
+          // o uno dei due è vuoto, sincronizziamo i dati
+          if (userCredential.user.displayName !== userData.displayName) {
+            // Priorità al nome in Auth, se esiste
+            if (userCredential.user.displayName) {
+              await updateDoc(doc(db, 'users', userDoc.id), {
+                displayName: userCredential.user.displayName,
+                updatedAt: new Date().toISOString()
+              });
+              console.log(`Updated Firestore profile with Auth name: ${userCredential.user.displayName}`);
+            } else if (userData.displayName) {
+              // Altrimenti aggiorniamo Auth con il nome da Firestore
+              await updateProfile(userCredential.user, { displayName: userData.displayName });
+              console.log(`Updated Auth profile with Firestore name: ${userData.displayName}`);
+            }
+          }
+        }
+      } catch (profileError) {
+        console.error("Error handling user profile during login:", profileError);
+        // Continuiamo comunque con il processo di login
+      }
+    }
+    
     return userCredential.user;
   } catch (error: any) {
     console.error("Error during login:", error);
