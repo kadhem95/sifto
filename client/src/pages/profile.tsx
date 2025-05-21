@@ -259,29 +259,9 @@ export default function Profile() {
       // Generiamo una nuova immagine di profilo
       console.log("Generazione nuovo avatar...");
       
-      // Determina il colore in base al nome utente per rendere l'avatar più personale
-      // ma allo stesso tempo coerente per lo stesso utente
-      function stringToColor(str: string): string {
-        const colors = [
-          '0D8ABC', // Blue primario
-          '7048E8', // Purple
-          '00A896', // Teal
-          'F58A07', // Orange
-          'F25F5C', // Coral
-        ];
-        
-        // Usa il nome utente per scegliere un colore deterministico
-        const hash = str.split('').reduce((acc, char) => {
-          return acc + char.charCodeAt(0);
-        }, 0);
-        
-        return colors[hash % colors.length];
-      }
-      
-      // Crea un avatar con il nome utente
-      const avatarColor = stringToColor(userName);
+      // Crea un nuovo avatar con il nome utente
       const timestamp = Date.now(); // Aggiungiamo timestamp per evitare cache
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=${avatarColor}&color=fff&size=256&t=${timestamp}`;
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff&size=256&t=${timestamp}`;
       
       console.log("Nuovo avatar generato:", avatarUrl);
       
