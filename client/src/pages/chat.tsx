@@ -57,11 +57,15 @@ export default function Chat() {
     return () => clearTimeout(timer);
   }, [messages]);
   
-  // Gestione semplificata e diretta dello scroll quando l'input è attivo
+  // Gestione migliorata dello scroll quando l'input è attivo (stile WhatsApp)
   useEffect(() => {
     if (isInputFocused) {
-      // Scroll immediato quando si attiva l'input
-      scrollToBottom(true);
+      // Piccolo delay per sincronizzarsi con l'animazione della tastiera
+      const timer = setTimeout(() => {
+        scrollToBottom(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isInputFocused]);
   
@@ -271,8 +275,13 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con input - essenziale e minimalista */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 z-10">          
+        {/* Footer con input - stile WhatsApp che si solleva sulla tastiera */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 z-10"
+             style={{ 
+               transform: isInputFocused ? 'translateY(-25px)' : 'translateY(0)',
+               transition: 'transform 0.2s ease-out',
+               willChange: 'transform'
+             }}>          
           {/* Input Area - stile WhatsApp semplificato */}
           <div className="p-3 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 flex items-center h-12">
