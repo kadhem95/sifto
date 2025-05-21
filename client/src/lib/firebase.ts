@@ -125,21 +125,59 @@ export const logout = async () => {
 // User profile functions
 export const createUserProfile = async (userId: string, userData: any) => {
   try {
+    console.log(`Tentativo di creazione/aggiornamento profilo per ${userId}`);
+    
     // Verifichiamo prima se l'utente esiste già
     const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
     const userSnapshot = await getDocs(userQuery);
     
     if (!userSnapshot.empty) {
       console.log(`Profilo utente già esistente per l'ID: ${userId}`);
-      // Se esiste già, restituiamo il documento esistente
+      
+      // Se esiste già, verifichiamo se ci sono dati da aggiornare
+      const userDoc = userSnapshot.docs[0];
+      const existingData = userDoc.data();
+      let needsUpdate = false;
+      
+      // Verifichiamo se ci sono campi da aggiornare
+      for (const key in userData) {
+        if (userData[key] && (!existingData[key] || existingData[key] !== userData[key])) {
+          needsUpdate = true;
+          break;
+        }
+      }
+      
+      if (needsUpdate) {
+        console.log(`Aggiornamento profilo per l'utente ${userId}`);
+        const userRef = doc(db, 'users', userDoc.id);
+        await updateDoc(userRef, {
+          ...userData,
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Otteniamo i dati aggiornati
+        const updatedDoc = await getDoc(userRef);
+        return {
+          id: userDoc.id,
+          ...updatedDoc.data()
+        };
+      }
+      
+      // Se non necessita aggiornamenti, restituiamo i dati esistenti
       return {
-        id: userSnapshot.docs[0].id,
-        ...userSnapshot.docs[0].data()
+        id: userDoc.id,
+        ...existingData
       };
     }
     
     // Se non esiste, lo creiamo
     console.log(`Creazione nuovo profilo utente per l'ID: ${userId}`);
+    
+    // Assicuriamoci che displayName non sia vuoto
+    if (!userData.displayName) {
+      userData.displayName = `Utente (${userId.slice(0, 6)})`;
+    }
+    
     const userDocRef = await addDoc(collection(db, 'users'), {
       uid: userId,
       ...userData,
@@ -157,7 +195,12 @@ export const createUserProfile = async (userId: string, userData: any) => {
     };
   } catch (error) {
     console.error("Errore nella creazione del profilo utente:", error);
-    throw error;
+    // Per evitare di bloccare l'applicazione, restituiamo un profilo minimo
+    return {
+      uid: userId,
+      displayName: `Utente (${userId.slice(0, 6)})`,
+      createdAt: new Date().toISOString()
+    };
   }
 };
 

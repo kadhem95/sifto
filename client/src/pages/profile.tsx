@@ -156,14 +156,17 @@ export default function Profile() {
     
     try {
       if (userName.trim() && userName !== userProfile?.displayName) {
+        const trimmedName = userName.trim();
+        
         // Prima aggiorniamo il profilo utente in Firebase Auth
         await updateProfile(currentUser, {
-          displayName: userName.trim()
+          displayName: trimmedName
         });
+        console.log("Nome aggiornato in Firebase Auth:", trimmedName);
         
         // Aggiorniamo anche il database Firestore per garantire la coerenza dei dati
         try {
-          // Trova il documento utente in Firestore
+          // Cerca il documento utente in Firestore
           const usersQuery = query(
             collection(db, "users"),
             where("uid", "==", currentUser.uid)
@@ -174,11 +177,32 @@ export default function Profile() {
             // Se troviamo il documento utente, aggiorniamo il displayName
             const userDoc = userSnapshot.docs[0];
             await updateDoc(doc(db, "users", userDoc.id), {
-              displayName: userName.trim()
+              displayName: trimmedName,
+              updatedAt: new Date().toISOString()
             });
-            console.log("Profilo utente aggiornato in Firestore con successo");
+            
+            console.log("Profilo utente aggiornato in Firestore con successo:", trimmedName);
+            
+            // Forza l'aggiornamento immediato dell'interfaccia utente
+            // per mostrare subito il nuovo nome
+            if (userProfile) {
+              // Aggiorniamo localmente il nome per un feedback immediato
+              setUserName(trimmedName);
+            }
           } else {
-            console.warn("Documento utente non trovato in Firestore");
+            console.log("Documento utente non trovato, lo creiamo");
+            // Se il documento non esiste in Firestore, lo creiamo
+            await addDoc(collection(db, "users"), {
+              uid: currentUser.uid,
+              displayName: trimmedName,
+              email: currentUser.email,
+              photoURL: currentUser.photoURL,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0
+            });
+            console.log("Nuovo profilo utente creato in Firestore");
           }
         } catch (firestoreError) {
           console.error("Errore nell'aggiornamento del profilo su Firestore:", firestoreError);
