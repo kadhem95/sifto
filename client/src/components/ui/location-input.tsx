@@ -115,19 +115,31 @@ export function LocationInput({
           value={inputValue}
           onChange={handleInputChange}
           onClick={() => {
-            // Mostra suggerimenti all'inizio se si clicca sul campo
+            // Mostra sempre i primi suggerimenti quando si clicca sul campo
+            // Se l'utente ha già iniziato a digitare, usa il filtro
             if (inputValue.length > 0) {
               const suggestions = filterSuggestions(inputValue);
               setSuggestions(suggestions);
               setShowSuggestions(suggestions.length > 0);
+            } else {
+              // Mostra le città più popolari come suggerimento iniziale
+              const popularCities = allCities.slice(0, 8);
+              setSuggestions(popularCities);
+              setShowSuggestions(true);
             }
           }}
           onFocus={() => {
-            // Mostra suggerimenti all'inizio se si seleziona il campo
+            // Mostra sempre i primi suggerimenti quando si seleziona il campo
+            // Se l'utente ha già iniziato a digitare, usa il filtro
             if (inputValue.length > 0) {
               const suggestions = filterSuggestions(inputValue);
               setSuggestions(suggestions);
               setShowSuggestions(suggestions.length > 0);
+            } else {
+              // Mostra le città più popolari come suggerimento iniziale
+              const popularCities = allCities.slice(0, 8);
+              setSuggestions(popularCities);
+              setShowSuggestions(true);
             }
           }}
           autoComplete="off"
