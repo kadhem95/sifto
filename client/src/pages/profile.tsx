@@ -248,7 +248,6 @@ export default function Profile() {
     setIsUploadingImage(true);
     
     try {
-      // Utilizziamo un servizio affidabile di avatar personalizzati
       console.log("Generazione avatar personalizzato...");
       
       // Estraiamo il nome e cognome per generare iniziali più accurate
@@ -259,8 +258,8 @@ export default function Profile() {
         // Se abbiamo nome e cognome, prendiamo la prima lettera di ciascuno
         initials = `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`;
       } else {
-        // Altrimenti prendiamo le prime due lettere del nome
-        initials = nameParts[0].substring(0, 2);
+        // Altrimenti prendiamo le prime due lettere del nome o almeno la prima
+        initials = nameParts[0].substring(0, Math.min(2, nameParts[0].length));
       }
       
       // Colori personalizzati per l'avatar
@@ -275,18 +274,13 @@ export default function Profile() {
       // Scegliamo un colore casuale per l'avatar
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
       
-      // Creiamo l'URL dell'avatar personalizzato
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=256&background=${randomColor}&color=fff&bold=true`;
+      // Creiamo l'URL dell'avatar personalizzato con cache-busting
+      const timestamp = Date.now();
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=256&background=${randomColor}&color=fff&bold=true&t=${timestamp}`;
       
-      // Aggiorniamo il profilo in Firebase Auth
-      if (currentUser) {
-        await updateProfile(currentUser, {
-          photoURL: avatarUrl
-        });
-        console.log("Profilo Auth aggiornato con avatar personalizzato");
-      }
-      
-      // Aggiorniamo anche il documento utente in Firestore
+      console.log("Avatar URL generato:", avatarUrl);
+
+      // Aggiorniamo sempre prima Firestore
       const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
       const userSnapshot = await getDocs(userQuery);
       
@@ -312,9 +306,17 @@ export default function Profile() {
         console.log("Nuovo profilo utente creato in Firestore con avatar personalizzato");
       }
       
+      // Poi aggiorniamo anche Firebase Auth, meno critico per la visualizzazione nell'app
+      if (currentUser) {
+        await updateProfile(currentUser, {
+          photoURL: avatarUrl
+        });
+        console.log("Profilo Auth aggiornato con avatar personalizzato");
+      }
+      
       toast({
-        title: "Avatar personalizzato",
-        description: "Abbiamo creato un avatar personalizzato con le tue iniziali!",
+        title: "Avatar aggiornato",
+        description: "Abbiamo creato un nuovo avatar personalizzato per te!",
         duration: 3000
       });
       
@@ -323,10 +325,15 @@ export default function Profile() {
         fileInputRef.current.value = '';
       }
       
-      // Forziamo un refresh della pagina per mostrare il nuovo avatar
+      // Aggiorniamo manualmente il contesto per riflettere immediatamente i cambiamenti
+      // senza dover riavviare la pagina
+      const { refreshUserProfile } = useAuth();
+      await refreshUserProfile();
+      
+      // Attendiamo un attimo prima di indicare che l'upload è completato
       setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+        setIsUploadingImage(false);
+      }, 500);
       
     } catch (error) {
       console.error("Errore durante la generazione dell'avatar:", error);
@@ -336,7 +343,6 @@ export default function Profile() {
         variant: "destructive",
         duration: 3000
       });
-    } finally {
       setIsUploadingImage(false);
     }
   };
@@ -379,7 +385,7 @@ export default function Profile() {
                 {/* Forziamo un refresh dell'URL dell'immagine con un timestamp per evitare la cache */}
                 <AvatarImage 
                   src={userProfile?.photoURL || currentUser?.photoURL || ''}
-                  alt={userName}
+                  alt={userName} 
                   className="object-cover"
                   onError={(e) => {
                     console.log("Errore nel caricamento dell'immagine, uso fallback");
