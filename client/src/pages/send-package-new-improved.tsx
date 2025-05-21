@@ -74,7 +74,7 @@ export default function SendPackage() {
     setIsLoading(true);
 
     try {
-      // Create the package document
+      // Create the package document with all required data
       const packageRef = await createPackage({
         userId: currentUser.uid,
         from: data.from,
@@ -83,18 +83,25 @@ export default function SendPackage() {
         description: data.description,
         dimensions: data.dimensions || "",
         price: data.price,
+        status: 'pending',
         createdAt: new Date().toISOString(),
       });
 
-      // If there's an image, upload it
+      // If there's an image, upload it with proper error handling
       if (imageFile && packageRef.id) {
-        await uploadPackageImage(packageRef.id, imageFile);
+        try {
+          await uploadPackageImage(packageRef.id, imageFile);
+        } catch (imageError) {
+          console.error("Errore durante il caricamento dell'immagine:", imageError);
+          // Continua comunque con il reindirizzamento anche se l'immagine non è stata caricata
+        }
       }
 
-      // Reindirizza l'utente alla sezione "Le mie attività" con il tab dei pacchi attivo
+      // Reindirizza immediatamente alla sezione "Le mie attività" con il tab pacchi attivo
       navigate("/my-shipments?tab=packages");
     } catch (error) {
-      console.error("Error creating package:", error);
+      console.error("Errore durante la creazione del pacco:", error);
+      alert("Si è verificato un errore. Riprova più tardi.");
     } finally {
       setIsLoading(false);
     }
