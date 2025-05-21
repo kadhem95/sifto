@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { createPackage, uploadPackageImage } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { LocationInput } from "@/components/ui/location-input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
@@ -64,21 +66,28 @@ export default function SendPackage() {
   const { toast } = useToast();
   
   const onSubmit = async (data: PackageFormValues) => {
+    // Verifica che l'utente sia loggato
     if (!currentUser) {
       navigate("/login");
       return;
     }
 
+    // Verifica che sia stata caricata un'immagine
     if (!imageFile) {
-      alert("Per favore, carica una foto del tuo pacco");
+      toast({
+        title: "Immagine mancante",
+        description: "Per favore, carica una foto del tuo pacco",
+        variant: "destructive"
+      });
       return;
     }
 
+    // Mostro indicatore di caricamento
     setIsLoading(true);
 
     try {
-      // Step 1: Creare il documento del pacco
-      const packageData = {
+      // 1. Creo il documento del pacco in Firestore
+      const packageDoc = await addDoc(collection(db, 'packages'), {
         userId: currentUser.uid,
         from: data.from,
         to: data.to,
@@ -86,37 +95,57 @@ export default function SendPackage() {
         description: data.description,
         dimensions: data.dimensions || "",
         price: data.price,
-        status: 'pending'
-      };
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+
+      console.log("Pacco creato con ID:", packageDoc.id);
       
-      // Usiamo la funzione helper che abbiamo già
-      const newPackage = await createPackage(packageData);
-      
-      // Step 2: Avviare il caricamento dell'immagine in background
-      if (imageFile && newPackage && newPackage.id) {
-        // Non usare await qui - avvia il caricamento ma non aspettare che finisca
+      // 2. Avvio il caricamento dell'immagine in background senza bloccare l'UI
+      if (imageFile) {
+        // Genero un nome univoco per evitare conflitti
+        const fileName = `${Date.now()}_${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const storageRef = ref(storage, `packages/${packageDoc.id}/${fileName}`);
+        
+        // Uso un timeout per non bloccare il reindirizzamento
         setTimeout(() => {
-          uploadPackageImage(newPackage.id, imageFile)
-            .catch(error => console.error("Errore caricamento immagine:", error));
-        }, 0);
+          console.log("Inizio upload immagine per:", packageDoc.id);
+          uploadBytes(storageRef, imageFile)
+            .then(snapshot => {
+              console.log("Immagine caricata, recupero URL");
+              return getDownloadURL(snapshot.ref);
+            })
+            .then(downloadURL => {
+              console.log("URL immagine ottenuto:", downloadURL);
+              const packageRef = doc(db, 'packages', packageDoc.id);
+              return updateDoc(packageRef, { imageUrl: downloadURL });
+            })
+            .then(() => {
+              console.log("URL immagine salvato nel documento");
+            })
+            .catch(error => {
+              console.error("Errore durante upload immagine:", error);
+            });
+        }, 100);
       }
       
-      // Step 3: Mostra una notifica di successo
+      // 3. Mostro notifica di successo
       toast({
         title: "Pacco pubblicato!",
         description: "Il tuo annuncio è stato pubblicato con successo",
       });
       
-      // Step 4: Reindirizza immediatamente (prima che l'immagine finisca di caricare)
+      // 4. Disattivo indicatore di caricamento e reindirizzo
       setIsLoading(false);
       navigate("/my-shipments?tab=packages");
     } catch (error) {
       console.error("Errore durante la creazione del pacco:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante la pubblicazione",
+        description: "Si è verificato un errore durante la pubblicazione. Riprova più tardi.",
         variant: "destructive"
       });
+      // Importante: disattivo l'indicatore di caricamento in caso di errore
       setIsLoading(false);
     }
   };
