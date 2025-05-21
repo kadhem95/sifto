@@ -289,19 +289,14 @@ export default function Profile() {
       }
       
       // Dopo il caricamento dell'immagine, aggiorniamo i dati dell'utente localmente
-      // senza dover ricaricare la pagina
-      if (currentUser && currentUser.photoURL) {
-        // Forziamo un refresh dell'immagine aggiungendo un timestamp come query parameter
-        // Questo evita problemi di caching del browser
-        const refreshedImageUrl = `${currentUser.photoURL}?t=${Date.now()}`;
-        console.log("Immagine salvata con URL:", refreshedImageUrl);
+      // e aggiorniamo l'interfaccia utente
+      setTimeout(() => {
+        // Attendiamo qualche istante per permettere a Firebase di sincronizzare i dati
+        console.log("Aggiornamento interfaccia utente con la nuova immagine...");
         
-        // Aggiorniamo l'avatar senza ricaricare la pagina
-        const avatarImage = document.querySelector('.avatar img') as HTMLImageElement;
-        if (avatarImage) {
-          avatarImage.src = refreshedImageUrl;
-        }
-      }
+        // Forziamo un refresh della pagina per mostrare la nuova immagine
+        window.location.reload();
+      }, 1000);
       
     } catch (error) {
       console.error("Errore durante l'aggiornamento dell'immagine:", error);
@@ -351,7 +346,7 @@ export default function Profile() {
             {/* Avatar con overlay per il caricamento dell'immagine */}
             <div className="relative">
               <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src={currentUser?.photoURL || undefined} alt={userName} />
+                <AvatarImage src={userProfile?.photoURL || currentUser?.photoURL || undefined} alt={userName} />
                 <AvatarFallback>{userName.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
               
