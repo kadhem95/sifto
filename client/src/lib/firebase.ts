@@ -8,7 +8,7 @@ import {
   updateProfile,
   User
 } from "firebase/auth";
-import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Initialize Firebase configuration
