@@ -257,9 +257,9 @@ export default function Chat() {
 
   return (
     <AppLayout hideNavigation>
-      <div className="flex flex-col h-[100vh] max-w-lg mx-auto relative">
-        {/* Header - stile WhatsApp/Signal (fixed) */}
-        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm sticky top-0 z-20">
+      <div className="flex flex-col h-screen max-w-lg mx-auto overflow-hidden">
+        {/* Header fisso in alto */}
+        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm z-20 flex-shrink-0">
           <button className="p-2 -ml-1" onClick={goBackToList}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -293,9 +293,9 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Messages Container - con padding-bottom per evitare che i messaggi finiscano sotto l'input */}
+        {/* Container scrollabile dei messaggi */}
         <div 
-          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-24" 
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-4" 
           style={{ backgroundColor: "#F7F7FC" }}
         >
           {messages.map((message) => (
@@ -325,20 +325,20 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions e Input Area - fissi in basso */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white shadow-md z-10 border-t border-neutral-100">
-          {/* Quick Actions */}
+        {/* Footer con quick actions e input - fisso in basso */}
+        <div className="bg-white border-t border-neutral-100 flex-shrink-0">
+          {/* Quick Actions - sempre fisse sotto i messaggi */}
           <QuickActions
             onMeetingPoint={handleSetMeetingPoint}
             onConfirmPrice={handleConfirmPrice}
             onDeliveryComplete={handleDeliveryComplete}
           />
           
-          {/* Input Area ottimizzata per mobile */}
+          {/* Input Area - fixed */}
           <div className="p-2 pb-3 bg-white flex items-center">
-            <div className="flex-1 bg-neutral-100 rounded-full px-4 py-2 min-h-[45px] flex items-center">
+            <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[45px] max-h-[100px] flex items-center">
               <Input
-                className="w-full bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-500"
+                className="w-full bg-transparent border-none shadow-none h-auto py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400"
                 placeholder="Scrivi un messaggio..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
