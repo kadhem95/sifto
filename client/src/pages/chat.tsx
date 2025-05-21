@@ -257,9 +257,9 @@ export default function Chat() {
 
   return (
     <AppLayout hideNavigation>
-      <div className="h-full flex flex-col max-w-lg mx-auto">
-        {/* Header - stile WhatsApp/Signal */}
-        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm sticky top-0 z-10">
+      <div className="flex flex-col h-[100vh] max-w-lg mx-auto relative">
+        {/* Header - stile WhatsApp/Signal (fixed) */}
+        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm sticky top-0 z-20">
           <button className="p-2 -ml-1" onClick={goBackToList}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -293,9 +293,9 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Messages Container - con sfondo neutro */}
+        {/* Messages Container - con padding-bottom per evitare che i messaggi finiscano sotto l'input */}
         <div 
-          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4" 
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-24" 
           style={{ backgroundColor: "#F7F7FC" }}
         >
           {messages.map((message) => (
@@ -325,43 +325,48 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions - pulsanti di azione rapida */}
-        <QuickActions
-          onMeetingPoint={handleSetMeetingPoint}
-          onConfirmPrice={handleConfirmPrice}
-          onDeliveryComplete={handleDeliveryComplete}
-        />
-        
-        {/* Input Area - stile moderno */}
-        <div className="p-2 border-t border-neutral-100 bg-white flex items-center shadow-sm">
-          <Input
-            className="flex-1 bg-neutral-100 rounded-full px-4 py-2.5 text-sm h-auto focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-400"
-            placeholder="Scrivi un messaggio..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyPress}
+        {/* Quick Actions e Input Area - fissi in basso */}
+        <div className="absolute bottom-0 left-0 right-0 bg-white shadow-md z-10 border-t border-neutral-100">
+          {/* Quick Actions */}
+          <QuickActions
+            onMeetingPoint={handleSetMeetingPoint}
+            onConfirmPrice={handleConfirmPrice}
+            onDeliveryComplete={handleDeliveryComplete}
           />
-          <Button
-            onClick={handleSendMessage}
-            className="ml-2 text-white rounded-full h-10 w-10 flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "#007BFF" }}
-            disabled={!newMessage.trim()}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+          
+          {/* Input Area ottimizzata per mobile */}
+          <div className="p-2 pb-3 bg-white flex items-center">
+            <div className="flex-1 bg-neutral-100 rounded-full px-4 py-2 min-h-[45px] flex items-center">
+              <Input
+                className="w-full bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-500"
+                placeholder="Scrivi un messaggio..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
               />
-            </svg>
-          </Button>
+            </div>
+            <Button
+              onClick={handleSendMessage}
+              className="ml-2 text-white rounded-full h-10 w-10 flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "#007BFF" }}
+              disabled={!newMessage.trim()}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </Button>
+          </div>
         </div>
       </div>
     </AppLayout>
