@@ -50,10 +50,18 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatDetails, setChatDetails] = useState<any>(null);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or after sending a message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Assicuriamo lo scroll fino in fondo quando arrivano nuovi messaggi
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   }, [messages]);
+  
+  // Funzione per scrollare fino in fondo
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (!currentUser) {
@@ -139,6 +147,8 @@ export default function Chat() {
     try {
       await sendMessage(id, currentUser.uid, newMessage);
       setNewMessage("");
+      // Scroll al fondo dopo l'invio di un messaggio
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -257,9 +267,12 @@ export default function Chat() {
 
   return (
     <AppLayout hideNavigation>
-      <div className="flex flex-col h-screen max-w-lg mx-auto overflow-hidden">
+      <div 
+        className="flex flex-col h-screen max-w-lg mx-auto overflow-hidden"
+        style={{ maxHeight: "-webkit-fill-available" }} // Fix per mobile safari
+      >
         {/* Header fisso in alto */}
-        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm z-20 flex-shrink-0">
+        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm z-20 flex-shrink-0 sticky top-0">
           <button className="p-2 -ml-1" onClick={goBackToList}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -293,10 +306,10 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Container scrollabile dei messaggi */}
+        {/* Container scrollabile dei messaggi con padding extra in fondo per evitare che i messaggi finiscano sotto l'input */}
         <div 
-          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-4" 
-          style={{ backgroundColor: "#F7F7FC" }}
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-28" 
+          style={{ backgroundColor: "#F7F7FC", overscrollBehavior: "contain" }}
         >
           {messages.map((message) => (
             <MessageItem
@@ -326,7 +339,7 @@ export default function Chat() {
         </div>
 
         {/* Footer con quick actions e input - fisso in basso */}
-        <div className="bg-white border-t border-neutral-100 flex-shrink-0">
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10">
           {/* Quick Actions - sempre fisse sotto i messaggi */}
           <QuickActions
             onMeetingPoint={handleSetMeetingPoint}
@@ -334,15 +347,16 @@ export default function Chat() {
             onDeliveryComplete={handleDeliveryComplete}
           />
           
-          {/* Input Area - fixed */}
+          {/* Input Area - fixed bottom */}
           <div className="p-2 pb-3 bg-white flex items-center">
-            <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[45px] max-h-[100px] flex items-center">
+            <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[48px] flex items-center">
               <Input
                 className="w-full bg-transparent border-none shadow-none h-auto py-2.5 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-neutral-400"
                 placeholder="Scrivi un messaggio..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
+                autoComplete="off"
               />
             </div>
             <Button
