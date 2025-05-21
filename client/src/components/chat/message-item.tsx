@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatRelative } from "date-fns";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 export type MessageType = "text" | "location" | "quickAction";
 
@@ -23,9 +24,9 @@ export default function MessageItem({
   const formatTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
-      return formatRelative(date, new Date());
+      return format(date, "HH:mm");
     } catch (error) {
-      return "Unknown time";
+      return "--:--";
     }
   };
 
@@ -51,29 +52,38 @@ export default function MessageItem({
         }
         return <div>{content}</div>;
       default:
-        return <div>{content}</div>;
+        return <div className="break-words">{content}</div>;
     }
   };
 
   return (
-    <div className={`flex ${isSender ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isSender ? "justify-end" : "justify-start"} mb-2 mx-1`}>
       {!isSender && senderAvatar && (
-        <Avatar className="w-8 h-8 mr-2 mt-1">
+        <Avatar className="w-7 h-7 mr-1.5 mt-1 flex-shrink-0">
           <AvatarImage src={senderAvatar} alt={senderName || "User"} />
           <AvatarFallback>{senderName?.charAt(0) || "U"}</AvatarFallback>
         </Avatar>
       )}
       <div
-        className={`p-3 max-w-[80%] ${
+        style={{ 
+          backgroundColor: isSender ? "#007BFF" : "#E5E5EA",
+          maxWidth: "75%",
+          wordBreak: "break-word"
+        }}
+        className={`py-2 px-3 relative ${
           isSender
-            ? "bg-primary text-white rounded-t-lg rounded-bl-lg ml-auto"
-            : "bg-neutral-200 text-neutral-900 rounded-t-lg rounded-br-lg"
+            ? "text-white rounded-2xl rounded-tr-sm"
+            : "text-neutral-800 rounded-2xl rounded-tl-sm"
         }`}
       >
         {renderMessageContent()}
-        <p className={`text-right text-xs ${isSender ? "text-white/70" : "text-neutral-500"} mt-1`}>
+        <div 
+          className={`text-right text-[10px] ${
+            isSender ? "text-white/80" : "text-neutral-500"
+          } mt-0.5 ml-2 inline-block float-right`}
+        >
           {formatTime(timestamp)}
-        </p>
+        </div>
       </div>
     </div>
   );

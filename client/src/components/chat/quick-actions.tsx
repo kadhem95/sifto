@@ -3,16 +3,17 @@ import { Button } from "@/components/ui/button";
 interface QuickActionButtonProps {
   text: string;
   onClick: () => void;
+  icon?: string;
 }
 
-function QuickActionButton({ text, onClick }: QuickActionButtonProps) {
+function QuickActionButton({ text, onClick, icon }: QuickActionButtonProps) {
   return (
     <Button
       onClick={onClick}
       variant="outline"
-      className="bg-neutral-100 text-neutral-700 py-1 px-3 rounded-lg text-sm font-medium h-auto border-neutral-200"
+      className="bg-white text-neutral-700 py-2 px-3 rounded-full text-xs font-medium h-auto border border-neutral-200 shadow-sm whitespace-nowrap flex-shrink-0 hover:bg-neutral-50"
     >
-      {text}
+      <span className="mr-1.5">{icon}</span> {text}
     </Button>
   );
 }
@@ -29,18 +30,21 @@ export default function QuickActions({
   onDeliveryComplete,
 }: QuickActionsProps) {
   return (
-    <div className="p-3 border-t border-neutral-200 bg-white flex items-center">
-      <div className="flex space-x-2 mb-2 mx-2 overflow-x-auto w-full">
+    <div className="p-2 border-t border-neutral-100 bg-white flex items-center overflow-hidden">
+      <div className="flex gap-2 pb-1 px-1 overflow-x-auto w-full no-scrollbar">
         <QuickActionButton 
-          text="📍 Punto d'incontro" 
+          icon="📍"
+          text="Punto d'incontro" 
           onClick={onMeetingPoint} 
         />
         <QuickActionButton 
-          text="💸 Conferma prezzo" 
+          icon="💸"
+          text="Conferma prezzo" 
           onClick={onConfirmPrice} 
         />
         <QuickActionButton 
-          text="📦 Pacco consegnato" 
+          icon="📦"
+          text="Pacco consegnato" 
           onClick={onDeliveryComplete} 
         />
       </div>

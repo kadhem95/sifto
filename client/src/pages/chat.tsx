@@ -257,12 +257,13 @@ export default function Chat() {
 
   return (
     <AppLayout hideNavigation>
-      <div className="h-full flex flex-col">
-        <div className="flex items-center p-4 border-b border-neutral-200 bg-white">
-          <button className="p-2" onClick={goBackToList}>
+      <div className="h-full flex flex-col max-w-lg mx-auto">
+        {/* Header - stile WhatsApp/Signal */}
+        <div className="flex items-center p-3 border-b border-neutral-100 bg-white shadow-sm sticky top-0 z-10">
+          <button className="p-2 -ml-1" onClick={goBackToList}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-neutral-900"
+              className="h-5 w-5 text-neutral-800"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -276,15 +277,15 @@ export default function Chat() {
             </svg>
           </button>
           {participant && (
-            <div className="flex items-center ml-2">
-              <Avatar className="w-10 h-10">
+            <div className="flex items-center ml-1 flex-1">
+              <Avatar className="w-9 h-9">
                 <AvatarImage src={participant.photoURL} alt={participant.name} />
                 <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
               </Avatar>
-              <div className="ml-3">
-                <h3 className="text-neutral-900 font-medium">{participant.name}</h3>
+              <div className="ml-2.5 truncate">
+                <h3 className="text-neutral-900 font-medium text-sm truncate">{participant.name}</h3>
                 <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
                   <span className="text-xs text-neutral-500">Online</span>
                 </div>
               </div>
@@ -292,7 +293,11 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 bg-neutral-100">
+        {/* Messages Container - con sfondo neutro */}
+        <div 
+          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4" 
+          style={{ backgroundColor: "#F7F7FC" }}
+        >
           {messages.map((message) => (
             <MessageItem
               key={message.id}
@@ -306,31 +311,40 @@ export default function Chat() {
           ))}
           
           {messages.length === 0 && (
-            <div className="text-center py-6 text-neutral-500">
-              <p>No messages yet. Start the conversation!</p>
+            <div className="flex flex-col items-center justify-center pt-12 pb-6 text-neutral-500">
+              <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-sm">Nessun messaggio.</p>
+              <p className="text-xs mt-1">Inizia la conversazione!</p>
             </div>
           )}
           
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Quick Actions - pulsanti di azione rapida */}
         <QuickActions
           onMeetingPoint={handleSetMeetingPoint}
           onConfirmPrice={handleConfirmPrice}
           onDeliveryComplete={handleDeliveryComplete}
         />
         
-        <div className="p-3 border-t border-neutral-200 bg-white flex items-center">
+        {/* Input Area - stile moderno */}
+        <div className="p-2 border-t border-neutral-100 bg-white flex items-center shadow-sm">
           <Input
-            className="flex-1 bg-neutral-100 rounded-lg px-4 py-3 mx-2 h-auto"
-            placeholder="Type a message..."
+            className="flex-1 bg-neutral-100 rounded-full px-4 py-2.5 text-sm h-auto focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-400"
+            placeholder="Scrivi un messaggio..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
           />
           <Button
             onClick={handleSendMessage}
-            className="p-2 text-white bg-primary rounded-full h-10 w-10 flex items-center justify-center"
+            className="ml-2 text-white rounded-full h-10 w-10 flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "#007BFF" }}
             disabled={!newMessage.trim()}
           >
             <svg
