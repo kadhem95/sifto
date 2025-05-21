@@ -79,3 +79,18 @@ export const formatCityDisplay = (city: { name: string; province?: string; count
   }
   return `${city.name}, ${city.country}`;
 };
+
+// Funzione per cercare la città dal testo formattato
+export const findCityFromDisplay = (displayText: string) => {
+  // Cerca nelle città italiane
+  const italianMatch = italianCities.find(city => 
+    formatCityDisplay(city) === displayText
+  );
+  if (italianMatch) return italianMatch;
+  
+  // Cerca nelle città del Nord Africa
+  const northAfricanMatch = northAfricanCities.find(city => 
+    formatCityDisplay(city) === displayText
+  );
+  return northAfricanMatch || null;
+};

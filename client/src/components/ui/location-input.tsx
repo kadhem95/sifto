@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { allCities, formatCityDisplay } from '@/data/cities';
 
+interface City {
+  name: string;
+  province?: string;
+  country: string;
+}
+
 type LocationInputProps = {
   id: string;
   label: string;
@@ -19,78 +25,127 @@ export function LocationInput({
   onChange,
   error
 }: LocationInputProps) {
-  const [input, setInput] = useState(value);
+  const [inputValue, setInputValue] = useState(value || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const inputRef = useRef<HTMLDivElement>(null);
+  const [suggestions, setSuggestions] = useState<City[]>([]);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Sincronizza lo stato interno quando cambia il valore esterno
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+    if (value !== inputValue && !selectedCity) {
+      setInputValue(value || '');
+    }
+  }, [value]);
+
+  // Gestisce il click fuori dal componente
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        
+        // Se l'utente non ha selezionato una città validata, ripristina l'ultima valida
+        if (selectedCity) {
+          setInputValue(formatCityDisplay(selectedCity));
+        } else if (value) {
+          setInputValue(value);
+        } else {
+          setInputValue('');
+        }
       }
-    };
+    }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [selectedCity, value]);
 
-  useEffect(() => {
-    setInput(value);
-  }, [value]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const userInput = e.target.value;
-    setInput(userInput);
-
-    // Filtra i suggerimenti
-    if (userInput.trim() === '') {
-      setSuggestions([]);
-      return;
+  // Aggiorna i suggerimenti quando l'utente digita
+  const filterSuggestions = (text: string) => {
+    if (!text.trim()) {
+      return [];
     }
-
-    const filtered = allCities.filter(city => 
-      formatCityDisplay(city).toLowerCase().includes(userInput.toLowerCase())
-    );
-    setSuggestions(filtered.slice(0, 8)); // Limita a 8 suggerimenti
-    setShowSuggestions(true);
+    
+    // Filtra le città che contengono il testo digitato
+    return allCities
+      .filter(city => {
+        const cityName = city.name.toLowerCase();
+        const searchText = text.toLowerCase();
+        return cityName.includes(searchText);
+      })
+      .slice(0, 8); // Limita a 8 suggerimenti
   };
 
-  const handleSelectSuggestion = (city: any) => {
-    const formattedCity = formatCityDisplay(city);
-    setInput(formattedCity);
-    onChange(formattedCity);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    
+    // Aggiorna i suggerimenti
+    const newSuggestions = filterSuggestions(newValue);
+    setSuggestions(newSuggestions);
+    setShowSuggestions(newSuggestions.length > 0);
+    
+    // Resetta la selezione se l'utente cambia il testo
+    setSelectedCity(null);
+  };
+
+  const handleSelectCity = (city: City) => {
+    const cityString = formatCityDisplay(city);
+    setInputValue(cityString);
+    setSelectedCity(city);
     setShowSuggestions(false);
+    onChange(cityString);
   };
 
   return (
-    <div className="relative" ref={inputRef}>
+    <div className="relative mb-4" ref={wrapperRef}>
       <label htmlFor={id} className="block text-neutral-700 font-medium mb-2">
         {label}
       </label>
-      <Input
-        id={id}
-        type="text"
-        placeholder={placeholder}
-        className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
-        value={input}
-        onChange={handleInputChange}
-        onFocus={() => setShowSuggestions(true)}
-      />
-      
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
-          {suggestions.map((city, index) => (
-            <div
-              key={index}
-              className="px-4 py-2 cursor-pointer hover:bg-neutral-100"
-              onClick={() => handleSelectSuggestion(city)}
-            >
-              {formatCityDisplay(city)}
-            </div>
-          ))}
+      <div className="relative">
+        <Input
+          id={id}
+          type="text"
+          className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
+          placeholder={placeholder}
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={() => {
+            const suggestions = filterSuggestions(inputValue);
+            setSuggestions(suggestions);
+            setShowSuggestions(suggestions.length > 0);
+          }}
+          autoComplete="off"
+        />
+        
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-20 left-0 right-0 mt-1 bg-white shadow-lg rounded-lg border border-neutral-200 max-h-60 overflow-y-auto">
+            {suggestions.map((city, index) => (
+              <div
+                key={index}
+                className="px-4 py-3 cursor-pointer hover:bg-neutral-100 transition-colors"
+                onClick={() => handleSelectCity(city)}
+              >
+                <div className="font-medium">{formatCityDisplay(city)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="absolute right-3 top-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-neutral-500"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+              clipRule="evenodd"
+            />
+          </svg>
         </div>
-      )}
+      </div>
       
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
