@@ -201,23 +201,38 @@ export default function TravelersList() {
           </div>
         )}
 
+        <div className="p-4 bg-neutral-100 rounded-lg text-center mb-6">
+          <p className="text-neutral-700 font-medium mb-2">Il tuo pacco è stato pubblicato!</p>
+          <p className="text-neutral-500 mb-2">
+            Non è necessario contattare i viaggiatori direttamente.
+          </p>
+          <p className="text-sm text-neutral-500">
+            I viaggiatori compatibili potranno vedere il tuo pacco e, se interessati, lo accetteranno. Riceverai una notifica quando qualcuno accetta il tuo pacco.
+          </p>
+        </div>
+        
+        <h2 className="text-lg font-medium mb-3">Viaggiatori compatibili disponibili</h2>
+        
         {trips.length > 0 ? (
-          trips.map((trip) => (
-            <TripCard
-              key={trip.id}
-              id={trip.id}
-              traveler={trip.traveler}
-              from={trip.from}
-              to={trip.to}
-              date={trip.date}
-              capacity={trip.capacity}
-              daysToDeadline={trip.daysToDeadline}
-              onContact={handleContactTraveler}
-            />
-          ))
+          <>
+            <p className="text-neutral-500 mb-4">Questi viaggiatori possono vedere il tuo pacco:</p>
+            {trips.map((trip) => (
+              <TripCard
+                key={trip.id}
+                id={trip.id}
+                traveler={trip.traveler}
+                from={trip.from}
+                to={trip.to}
+                date={trip.date}
+                capacity={trip.capacity}
+                daysToDeadline={trip.daysToDeadline}
+                readOnly={true}
+              />
+            ))}
+          </>
         ) : (
           <div className="p-4 bg-neutral-100 rounded-lg text-center">
-            <p className="text-neutral-500 mb-2">Nessun viaggiatore disponibile</p>
+            <p className="text-neutral-500 mb-2">Nessun viaggiatore disponibile al momento</p>
             <p className="text-sm text-neutral-500">
               Ti avviseremo quando nuovi viaggiatori corrispondono alle tue esigenze
             </p>

@@ -20,7 +20,8 @@ interface TripCardProps {
   date: string;
   capacity: number;
   daysToDeadline?: number;
-  onContact: (tripId: string) => void;
+  onContact?: (tripId: string) => void;
+  readOnly?: boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export default function TripCard({
   capacity,
   daysToDeadline,
   onContact,
+  readOnly = false,
   className = "",
 }: TripCardProps) {
   const [showReviews, setShowReviews] = useState(false);
@@ -104,12 +106,14 @@ export default function TripCard({
 
           <div className="mt-3 flex justify-between items-center">
             <span className="text-neutral-500">Spazio per {capacity} {capacity === 1 ? 'pacco' : 'pacchi'}</span>
-            <Button
-              onClick={() => onContact(id)}
-              className="bg-primary text-white font-medium rounded-lg px-4 py-2 h-auto"
-            >
-              Contatta
-            </Button>
+            {!readOnly && onContact && (
+              <Button
+                onClick={() => onContact(id)}
+                className="bg-primary text-white font-medium rounded-lg px-4 py-2 h-auto"
+              >
+                Contatta
+              </Button>
+            )}
           </div>
         </div>
       </div>
