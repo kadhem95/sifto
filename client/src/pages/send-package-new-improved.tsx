@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { createPackage, uploadPackageImage } from "@/lib/firebase";
 import { LocationInput } from "@/components/ui/location-input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useToast } from "@/hooks/use-toast";
 
 const packageFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di origine"),
@@ -74,7 +75,7 @@ export default function SendPackage() {
     setIsLoading(true);
 
     try {
-      // Create the package document with all required data
+      // Step 1: Creiamo prima il documento del pacco
       const packageRef = await createPackage({
         userId: currentUser.uid,
         from: data.from,
@@ -87,22 +88,32 @@ export default function SendPackage() {
         createdAt: new Date().toISOString(),
       });
 
-      // If there's an image, upload it with proper error handling
+      // Step 2: Avviamo il caricamento dell'immagine ma NON attendiamo
       if (imageFile && packageRef.id) {
-        try {
-          await uploadPackageImage(packageRef.id, imageFile);
-        } catch (imageError) {
-          console.error("Errore durante il caricamento dell'immagine:", imageError);
-          // Continua comunque con il reindirizzamento anche se l'immagine non è stata caricata
-        }
+        // Avviare il caricamento in background senza attendere
+        setTimeout(() => {
+          uploadPackageImage(packageRef.id, imageFile)
+            .catch(err => console.error("Errore caricamento immagine:", err));
+        }, 100);
       }
 
-      // Reindirizza immediatamente alla sezione "Le mie attività" con il tab pacchi attivo
+      // Step 3: Mostra messaggio di successo
+      toast({
+        title: "Pacco pubblicato con successo!",
+        description: "Stai per essere reindirizzato alla sezione 'Le mie attività'",
+        variant: "default"
+      });
+
+      // Step 4: Reindirizza IMMEDIATAMENTE (prima del caricamento immagine)
+      setIsLoading(false);
       navigate("/my-shipments?tab=packages");
     } catch (error) {
       console.error("Errore durante la creazione del pacco:", error);
-      alert("Si è verificato un errore. Riprova più tardi.");
-    } finally {
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante la pubblicazione. Riprova.",
+        variant: "destructive"
+      });
       setIsLoading(false);
     }
   };
