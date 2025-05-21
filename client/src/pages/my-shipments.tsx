@@ -400,12 +400,12 @@ export default function MyShipments() {
 
             {filteredShipments.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-neutral-500">You don't have any packages yet</p>
+                <p className="text-neutral-500">Non hai ancora nessun pacco</p>
                 <Button
                   onClick={() => navigate("/send-package")}
                   className="mt-4 bg-primary text-white"
                 >
-                  Send a Package
+                  Invia un pacco
                 </Button>
               </div>
             )}
@@ -504,12 +504,12 @@ export default function MyShipments() {
 
             {filteredShipments.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-neutral-500">You don't have any trips yet</p>
+                <p className="text-neutral-500">Non hai ancora nessun viaggio</p>
                 <Button
                   onClick={() => navigate("/report-trip")}
                   className="mt-4 bg-secondary text-white"
                 >
-                  Report a Trip
+                  Aggiungi un viaggio
                 </Button>
               </div>
             )}
