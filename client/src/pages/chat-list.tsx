@@ -172,11 +172,17 @@ export default function ChatList() {
             formattedContent = "⚡ Azione rapida";
           }
           
-          // Nome chat
-          let chatName = otherUserName;
+          // Nome chat - Assicuriamoci di visualizzare sempre un nome valido
+          let chatName = otherUserName || `Utente (${otherUserId.slice(0, 6)})`;
+          
+          // Se abbiamo dettagli del pacco e del viaggio, mostriamo dettagli aggiuntivi
           if (packageDetails && tripDetails) {
-            chatName = `${otherUserName} • ${packageDetails.from} → ${packageDetails.to}`;
+            // Anche qui, garantiamo che il nome utente sia sempre visualizzato
+            chatName = `${otherUserName || `Utente (${otherUserId.slice(0, 6)})`} • ${packageDetails.from} → ${packageDetails.to}`;
           }
+          
+          // Registriamo nel log il nome chat che stiamo visualizzando
+          console.log(`Nome visualizzato per chat ${chatId}: ${chatName}`);
 
           return {
             id: chatId,
