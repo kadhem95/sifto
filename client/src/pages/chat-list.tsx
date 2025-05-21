@@ -81,55 +81,20 @@ export default function ChatList() {
           let otherUserPhoto = undefined;
           
           try {
-            // Funzione per ottenere o creare un profilo utente
-            const getOrCreateUserProfile = async (userId: string) => {
-              // Prima proviamo a ottenere il profilo esistente
-              const usersRef = collection(db, 'users');
-              const userQuery = query(usersRef, where('uid', '==', userId));
-              const querySnapshot = await getDocs(userQuery);
-              
-              if (!querySnapshot.empty) {
-                // Profilo trovato in Firestore
-                return {
-                  id: querySnapshot.docs[0].id,
-                  ...querySnapshot.docs[0].data()
-                };
-              }
-              
-              // Profilo non trovato, lo creiamo
-              console.log(`Lista chat: creazione profilo per utente ${userId}`);
-              
-              // Dati base per il nuovo profilo
-              const profileData = {
-                uid: userId,
-                displayName: `Utente (${userId.slice(0, 6)})`,
-                createdAt: new Date().toISOString(),
-                rating: 0,
-                reviewCount: 0
-              };
-              
-              // Aggiungiamo il nuovo profilo utente a Firestore
-              const docRef = await addDoc(collection(db, 'users'), profileData);
-              
-              console.log(`Profilo creato con successo per ${userId}`);
-              
-              // Restituiamo il profilo creato
-              return {
-                id: docRef.id,
-                ...profileData
-              };
-            };
+            // Utilizziamo la funzione migliorata in lib/firebase.ts che garantisce
+            // sempre un risultato valido e crea automaticamente profili mancanti
+            const userProfile = await getUserProfile(otherUserId);
             
-            // Ottieni o crea il profilo utente
-            const userProfile = await getOrCreateUserProfile(otherUserId);
-            
-            // Ora abbiamo sicuramente un profilo, ma potrebbe essere di formati diversi
-            // Convertiamo il profilo in un formato più sicuro
+            // Il profilo sarà sempre valido grazie alla nostra funzione migliorata
+            // Estraiamo i dati, con type casting per evitare problemi di tipo
             const profileData = userProfile as any;
             
             // Prendiamo i dati che ci servono
-            otherUserName = profileData.displayName || `Utente (${otherUserId.slice(0, 6)}...)`;
+            otherUserName = profileData.displayName || `Utente (${otherUserId.slice(0, 6)})`;
             otherUserPhoto = profileData.photoURL;
+            
+            console.log(`Chat-list: Recuperato profilo per ${otherUserId}: ${otherUserName}`);
+            
           } catch (error) {
             console.error("Errore nel recupero utente:", error);
             // Fallback in caso di errore

@@ -115,64 +115,24 @@ export default function Chat() {
         
         if (participantId) {
           try {
-            // Creiamo una funzione per ottenere il profilo utente
-            const getOrCreateUserProfile = async (userId: string) => {
-              // Prima proviamo a ottenere il profilo esistente
-              const usersRef = collection(db, 'users');
-              const userQuery = query(usersRef, where('uid', '==', userId));
-              const querySnapshot = await getDocs(userQuery);
-              
-              if (!querySnapshot.empty) {
-                // Profilo trovato in Firestore
-                return {
-                  id: querySnapshot.docs[0].id,
-                  ...querySnapshot.docs[0].data()
-                };
-              }
-              
-              // Profilo non trovato, lo creiamo
-              console.log(`Creazione automatica profilo per utente: ${userId}`);
-              
-              // Dati base per il nuovo profilo
-              const profileData = {
-                uid: userId,
-                displayName: `Utente (${userId.slice(0, 6)})`,
-                email: "",
-                photoURL: "",
-                createdAt: new Date().toISOString(),
-                rating: 0,
-                reviewCount: 0
-              };
-              
-              // Aggiungiamo il nuovo profilo utente a Firestore
-              const docRef = await addDoc(collection(db, 'users'), profileData);
-              
-              // Restituiamo il profilo creato
-              return {
-                id: docRef.id,
-                ...profileData
-              };
-            };
+            // Utilizziamo la funzione migliorata che garantisce sempre un risultato valido
+            // e gestisce automaticamente la creazione dei profili mancanti
+            const participantProfile = await getUserProfile(participantId);
             
-            // Ottieni o crea il profilo utente
-            const participantProfile = await getOrCreateUserProfile(participantId);
+            // A questo punto avremo sempre un profilo valido
+            // Convertiamo il formato per evitare problemi con i tipi
+            const profileData = participantProfile as any;
             
-            if (participantProfile) {
-              // Convertiamo il formato del profilo utente nel formato richiesto da ChatParticipant
-              const profileData = participantProfile as any;
-              
-              // Determiniamo il vero nome dell'utente dalla fonte più affidabile disponibile
-              const userDisplayName = profileData.displayName || 
-                                     (profileData.phoneNumber ? `${profileData.phoneNumber.slice(-4)}` : 
-                                     (profileData.email ? profileData.email.split('@')[0] : participantId.slice(0, 8)));
-              
-              setParticipant({
-                id: profileData.uid || participantId,
-                name: userDisplayName,
-                photoURL: profileData.photoURL,
-                isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
-              });
-            }
+            // Mostriamo il nome dell'utente recuperato
+            console.log(`Chat: Recuperato profilo per ${participantId}: ${profileData.displayName}`);
+            
+            // Impostiamo i dati del partecipante
+            setParticipant({
+              id: profileData.uid || participantId,
+              name: profileData.displayName || `Utente (${participantId.slice(0, 6)})`,
+              photoURL: profileData.photoURL,
+              isOnline: false // Disabilitiamo lo stato "online" poiché non possiamo verificarlo in modo affidabile
+            });
           } catch (error) {
             console.error("Errore nel recupero/creazione profilo utente:", error);
             

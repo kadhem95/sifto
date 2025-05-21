@@ -204,58 +204,112 @@ export const createUserProfile = async (userId: string, userData: any) => {
   }
 };
 
+// Nuova funzione migliorata, garantisce sempre un risultato valido
 export const getUserProfile = async (userId: string) => {
   try {
-    // Primo tentativo: cerca il profilo nel database Firestore
-    const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
-    const userSnapshot = await getDocs(userQuery);
+    console.log(`Recupero profilo per utente ${userId}...`);
     
-    // Recupera anche le informazioni da Firebase Auth se possibile
-    let authUserInfo = null;
+    // Fonte 1: Firebase Auth (se l'utente corrente è quello richiesto)
+    let authUserData = null;
     if (auth.currentUser && auth.currentUser.uid === userId) {
-      authUserInfo = {
+      authUserData = {
+        uid: userId,
         displayName: auth.currentUser.displayName,
         email: auth.currentUser.email,
         photoURL: auth.currentUser.photoURL,
         phoneNumber: auth.currentUser.phoneNumber
       };
+      console.log(`Dati recuperati da Firebase Auth:`, authUserData.displayName);
     }
+    
+    // Fonte 2: Firestore database
+    const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+    let firestoreUserData = null;
     
     if (!userSnapshot.empty) {
-      // Abbiamo trovato il profilo in Firestore
-      const firestoreData = userSnapshot.docs[0].data();
-      
-      // Fondiamo i dati di Firestore con quelli di Auth (Auth ha priorità)
-      const mergedData = {
+      firestoreUserData = {
         id: userSnapshot.docs[0].id,
-        ...firestoreData,
-        // Usiamo i dati di Auth se disponibili, altrimenti manteniamo quelli di Firestore
-        ...(authUserInfo ? {
-          displayName: authUserInfo.displayName || firestoreData.displayName,
-          photoURL: authUserInfo.photoURL || firestoreData.photoURL,
-        } : {})
+        ...userSnapshot.docs[0].data()
       };
-      
-      return mergedData;
-    } else if (authUserInfo && (authUserInfo.displayName || authUserInfo.photoURL)) {
-      // Non abbiamo trovato il profilo in Firestore, ma abbiamo informazioni da Auth
-      console.log(`Recupero solo da Auth per l'utente ${userId}:`, authUserInfo);
-      
-      // Creiamo un profilo base con i dati disponibili
+      console.log(`Dati recuperati da Firestore:`, firestoreUserData.displayName);
+    }
+    
+    // Se abbiamo trovato dati in Firestore
+    if (firestoreUserData) {
+      // Combiniamo i dati, dando priorità a quelli di Auth se disponibili
       return {
-        uid: userId,
-        displayName: authUserInfo.displayName || "",
-        photoURL: authUserInfo.photoURL || "",
-        createdAt: new Date().toISOString()
+        ...firestoreUserData,
+        ...(authUserData ? {
+          displayName: authUserData.displayName || firestoreUserData.displayName,
+          photoURL: authUserData.photoURL || firestoreUserData.photoURL,
+        } : {})
       };
     }
     
-    // Nessun profilo trovato né in Firestore né in Auth
-    console.warn(`Nessun profilo utente trovato per l'ID: ${userId}`);
-    return null;
+    // Se non abbiamo trovato nulla in Firestore ma abbiamo dati di Auth
+    if (authUserData && (authUserData.displayName || authUserData.email)) {
+      // Creiamo automaticamente un nuovo profilo utente in Firestore
+      console.log(`Creazione automatica del profilo per l'utente ${userId} da Auth`);
+      
+      const userData = {
+        uid: userId,
+        displayName: authUserData.displayName || `Utente ${userId.slice(0, 6)}`,
+        email: authUserData.email || "",
+        photoURL: authUserData.photoURL || "",
+        phoneNumber: authUserData.phoneNumber || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        rating: 0,
+        reviewCount: 0
+      };
+      
+      try {
+        // Creazione del profilo in Firestore
+        const userDocRef = await addDoc(collection(db, 'users'), userData);
+        console.log(`Profilo creato con successo in Firestore con ID: ${userDocRef.id}`);
+        
+        return {
+          id: userDocRef.id,
+          ...userData
+        };
+      } catch (createError) {
+        console.error("Errore nella creazione del profilo:", createError);
+        return userData; // Restituiamo comunque i dati anche se non siamo riusciti a salvarli
+      }
+    }
+    
+    // Se non abbiamo trovato dati da nessuna parte, creiamo un profilo minimale
+    console.log(`Creazione profilo minimo per l'utente ${userId}`);
+    const minimalUserData = {
+      uid: userId,
+      displayName: `Utente (${userId.slice(0, 6)})`,
+      createdAt: new Date().toISOString(),
+      rating: 0,
+      reviewCount: 0
+    };
+    
+    // Proviamo a salvare anche questo profilo minimo
+    try {
+      const minimalDocRef = await addDoc(collection(db, 'users'), minimalUserData);
+      console.log(`Profilo minimo creato in Firestore con ID: ${minimalDocRef.id}`);
+      
+      return {
+        id: minimalDocRef.id,
+        ...minimalUserData
+      };
+    } catch (minimalError) {
+      console.warn("Impossibile salvare il profilo minimo:", minimalError);
+      return minimalUserData; // Restituiamo i dati anche in caso di errore
+    }
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return null; // Restituiamo null invece di lanciare l'errore per una gestione più robusta
+    console.error("Errore generale nel recupero del profilo:", error);
+    // Fallback per garantire che ci sia sempre un risultato
+    return {
+      uid: userId,
+      displayName: `Utente (${userId.slice(0, 6)})`,
+      createdAt: new Date().toISOString()
+    };
   }
 };
 
