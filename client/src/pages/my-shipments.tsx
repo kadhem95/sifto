@@ -29,7 +29,13 @@ interface ShipmentData {
 export default function MyShipments() {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<"packages" | "trips">("packages");
+  // Determina quale tab mostrare inizialmente in base ai parametri URL o attività precedenti
+  const [activeTab, setActiveTab] = useState<"packages" | "trips">(() => {
+    // Controlla se siamo arrivati da un reindirizzamento con parametro specifico
+    const searchParams = new URLSearchParams(window.location.search);
+    const tab = searchParams.get("tab");
+    return tab === "trips" ? "trips" : "packages";
+  });
   const [shipments, setShipments] = useState<ShipmentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -221,9 +227,9 @@ export default function MyShipments() {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+      return new Date(dateString).toLocaleDateString("it-IT", {
+        day: "2-digit",
+        month: "2-digit",
         year: "numeric"
       });
     } catch (e) {
@@ -234,11 +240,11 @@ export default function MyShipments() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <div className="bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full text-sm font-medium">Pending</div>;
+        return <div className="bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full text-sm font-medium">In attesa</div>;
       case "in_progress":
-        return <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">In progress</div>;
+        return <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">In corso</div>;
       case "completed":
-        return <div className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-sm font-medium">Completed</div>;
+        return <div className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-sm font-medium">Completato</div>;
       default:
         return null;
     }
@@ -255,7 +261,8 @@ export default function MyShipments() {
   };
 
   const filteredShipments = shipments.filter((shipment) => 
-    shipment.type === activeTab
+    (activeTab === "packages" && shipment.type === "package") || 
+    (activeTab === "trips" && shipment.type === "trip")
   );
 
   const activeShipments = filteredShipments.filter((shipment) => 
@@ -282,7 +289,7 @@ export default function MyShipments() {
   return (
     <AppLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">My Activities</h1>
+        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Le mie attività</h1>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "packages" | "trips")}>
           <TabsList className="flex w-full mb-4 border-b border-neutral-200 bg-transparent">
@@ -290,13 +297,13 @@ export default function MyShipments() {
               value="packages" 
               className="flex-1 py-2 px-4 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary"
             >
-              My Packages
+              I miei pacchi
             </TabsTrigger>
             <TabsTrigger 
               value="trips" 
               className="flex-1 py-2 px-4 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary"
             >
-              My Trips
+              I miei viaggi
             </TabsTrigger>
           </TabsList>
           
