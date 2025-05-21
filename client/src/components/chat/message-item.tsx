@@ -42,15 +42,9 @@ export default function MessageItem({
             <span>{content}</span>
           </div>
         );
+      // Per retrocompatibilità, manteniamo il supporto per quickAction ma le mostriamo come testo normale
       case "quickAction":
-        if (content.startsWith("📍")) {
-          return <div className="font-medium">{content}</div>;
-        } else if (content.startsWith("💸")) {
-          return <div className="font-medium">{content}</div>;
-        } else if (content.startsWith("📦")) {
-          return <div className="font-medium">{content}</div>;
-        }
-        return <div>{content}</div>;
+        return <div className="break-words">{content}</div>;
       default:
         return <div className="break-words">{content}</div>;
     }
