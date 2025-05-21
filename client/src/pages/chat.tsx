@@ -49,18 +49,33 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatDetails, setChatDetails] = useState<any>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
-  // Scroll to bottom when messages change or after sending a message
+  // Gestione dello scroll quando arrivano nuovi messaggi o quando la tastiera viene attivata
   useEffect(() => {
-    // Assicuriamo lo scroll fino in fondo quando arrivano nuovi messaggi
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Piccolo ritardo per assicurarsi che il rendering sia completato
+    const timer = setTimeout(() => {
+      scrollToBottom();
     }, 100);
+    
+    return () => clearTimeout(timer);
   }, [messages]);
   
-  // Funzione per scrollare fino in fondo
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Scroll automatico quando l'input viene messo a fuoco (tastiera aperta)
+  useEffect(() => {
+    if (isInputFocused) {
+      // Assicuriamo che la vista si sposti immediatamente quando la tastiera si apre
+      scrollToBottom(true);
+    }
+  }, [isInputFocused]);
+  
+  // Funzione avanzata per scroll chat
+  const scrollToBottom = (instant = false) => {
+    if (!messagesEndRef.current) return;
+    messagesEndRef.current.scrollIntoView({ 
+      behavior: instant ? "auto" : "smooth",
+      block: "end" 
+    });
   };
 
   useEffect(() => {
@@ -145,10 +160,15 @@ export default function Chat() {
     if (!newMessage.trim() || !currentUser) return;
     
     try {
-      await sendMessage(id, currentUser.uid, newMessage);
+      // Prima resettiamo il campo di input per migliorare la reattività percepita
+      const messageToSend = newMessage;
       setNewMessage("");
-      // Scroll al fondo dopo l'invio di un messaggio
-      setTimeout(scrollToBottom, 100);
+      
+      // Poi inviamo il messaggio
+      await sendMessage(id, currentUser.uid, messageToSend);
+      
+      // Scroll immediato al fondo
+      setTimeout(() => scrollToBottom(true), 50);
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -306,9 +326,9 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Container scrollabile dei messaggi con padding extra in fondo per evitare che i messaggi finiscano sotto l'input */}
+        {/* Container scrollabile dei messaggi con padding che si adatta in base al focus dell'input */}
         <div 
-          className="flex-1 overflow-y-auto p-2 md:p-3 pt-4 pb-28" 
+          className={`flex-1 overflow-y-auto p-2 md:p-3 pt-4 ${isInputFocused ? 'pb-16' : 'pb-28'}`}
           style={{ backgroundColor: "#F7F7FC", overscrollBehavior: "contain" }}
         >
           {messages.map((message) => (
@@ -338,16 +358,18 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Footer con quick actions e input - fisso in basso */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10">
-          {/* Quick Actions - sempre fisse sotto i messaggi */}
-          <QuickActions
-            onMeetingPoint={handleSetMeetingPoint}
-            onConfirmPrice={handleConfirmPrice}
-            onDeliveryComplete={handleDeliveryComplete}
-          />
+        {/* Footer con quick actions e input - fisso in basso ma con comportamento adattivo */}
+        <div className={`fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-neutral-100 shadow-md z-10 transition-all duration-200 ${isInputFocused ? "transform translate-y-0" : ""}`}>
+          {/* Quick Actions - visibili solo quando l'input non è attivo */}
+          {!isInputFocused && (
+            <QuickActions
+              onMeetingPoint={handleSetMeetingPoint}
+              onConfirmPrice={handleConfirmPrice}
+              onDeliveryComplete={handleDeliveryComplete}
+            />
+          )}
           
-          {/* Input Area - fixed bottom */}
+          {/* Input Area - con gestione del focus */}
           <div className="p-2 pb-3 bg-white flex items-center">
             <div className="flex-1 bg-neutral-100 rounded-full px-4 min-h-[48px] flex items-center">
               <Input
@@ -356,6 +378,8 @@ export default function Chat() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
                 autoComplete="off"
               />
             </div>
