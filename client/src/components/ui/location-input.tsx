@@ -65,12 +65,17 @@ export function LocationInput({
       return [];
     }
     
-    // Filtra le città che contengono il testo digitato
+    // Filtra le città che contengono il testo digitato (case insensitive)
     return allCities
       .filter(city => {
         const cityName = city.name.toLowerCase();
+        const cityProvince = city.province ? city.province.toLowerCase() : '';
+        const cityCountry = city.country.toLowerCase();
         const searchText = text.toLowerCase();
-        return cityName.includes(searchText);
+        
+        return cityName.includes(searchText) || 
+               cityProvince.includes(searchText) || 
+               cityCountry.includes(searchText);
       })
       .slice(0, 8); // Limita a 8 suggerimenti
   };
@@ -109,10 +114,21 @@ export function LocationInput({
           placeholder={placeholder}
           value={inputValue}
           onChange={handleInputChange}
+          onClick={() => {
+            // Mostra suggerimenti all'inizio se si clicca sul campo
+            if (inputValue.length > 0) {
+              const suggestions = filterSuggestions(inputValue);
+              setSuggestions(suggestions);
+              setShowSuggestions(suggestions.length > 0);
+            }
+          }}
           onFocus={() => {
-            const suggestions = filterSuggestions(inputValue);
-            setSuggestions(suggestions);
-            setShowSuggestions(suggestions.length > 0);
+            // Mostra suggerimenti all'inizio se si seleziona il campo
+            if (inputValue.length > 0) {
+              const suggestions = filterSuggestions(inputValue);
+              setSuggestions(suggestions);
+              setShowSuggestions(suggestions.length > 0);
+            }
           }}
           autoComplete="off"
         />
@@ -122,10 +138,16 @@ export function LocationInput({
             {suggestions.map((city, index) => (
               <div
                 key={index}
-                className="px-4 py-3 cursor-pointer hover:bg-neutral-100 transition-colors"
+                className="px-4 py-3 cursor-pointer hover:bg-neutral-100 transition-colors flex items-center"
                 onClick={() => handleSelectCity(city)}
               >
-                <div className="font-medium">{formatCityDisplay(city)}</div>
+                <div className="mr-2 text-neutral-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="font-medium flex-1">{formatCityDisplay(city)}</div>
               </div>
             ))}
           </div>
