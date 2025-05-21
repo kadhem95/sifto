@@ -340,7 +340,10 @@ export default function MyShipments() {
   console.log("Status dei viaggi:", myTrips.map(trip => ({id: trip.id, status: trip.status})));
   
   // Raggruppa per stato
-  const pendingShipments = shipments.filter(s => s.status === "pending" || s.status === "active");
+  const pendingShipments = shipments.filter(s => 
+    s.status === "pending" || 
+    s.status === "active"
+  );
   console.log("Viaggi in attesa/attivi:", pendingShipments.filter(s => s.type === "trip"));
   
   const inProgressShipments = shipments.filter(s => s.status === "in_progress");
