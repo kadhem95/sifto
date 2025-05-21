@@ -14,6 +14,10 @@ import Chat from "@/pages/chat";
 import MyShipments from "@/pages/my-shipments";
 import Review from "@/pages/review";
 import Profile from "@/pages/profile";
+import PackageDetails from "@/pages/package-details";
+import TripDetails from "@/pages/trip-details";
+import EditPackage from "@/pages/edit-package";
+import EditTrip from "@/pages/edit-trip";
 import { AuthProvider } from "./context/auth-context";
 import { useEffect } from "react";
 import { auth } from "./lib/firebase";
@@ -50,6 +54,10 @@ function Router() {
       <Route path="/my-shipments" component={MyShipments} />
       <Route path="/review/:id" component={Review} />
       <Route path="/profile" component={Profile} />
+      <Route path="/package-details/:id" component={PackageDetails} />
+      <Route path="/trip-details/:id" component={TripDetails} />
+      <Route path="/edit-package/:id" component={EditPackage} />
+      <Route path="/edit-trip/:id" component={EditTrip} />
       <Route component={NotFound} />
     </Switch>
   );

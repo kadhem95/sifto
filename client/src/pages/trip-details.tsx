@@ -91,13 +91,15 @@ export default function TripDetails() {
         const matchesSnapshot = await getDocs(matchesQuery);
         
         // Elimina tutti i match associati
-        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => 
-          deleteDoc(doc(db, "matches", matchDoc.id))
-        );
+        const deleteMatchPromises = matchesSnapshot.docs.map(matchDoc => {
+          const matchRef = doc(db, "matches", matchDoc.id);
+          return deleteDoc(matchRef);
+        });
         await Promise.all(deleteMatchPromises);
         
         // Elimina il viaggio
-        await deleteDoc(doc(db, "trips", tripId));
+        const tripRef = doc(db, "trips", tripId);
+        await deleteDoc(tripRef);
         
         toast({
           title: "Viaggio eliminato",

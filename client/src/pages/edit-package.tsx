@@ -202,6 +202,7 @@ export default function EditPackage() {
             {/* Campo Partenza */}
             <div className="mb-4">
               <LocationInput
+                id="from-location"
                 label="Località di partenza"
                 value={watch("from")}
                 onChange={(value) => setValue("from", value, { shouldValidate: true })}
@@ -212,6 +213,7 @@ export default function EditPackage() {
             {/* Campo Destinazione */}
             <div className="mb-4">
               <LocationInput
+                id="to-location"
                 label="Località di destinazione"
                 value={watch("to")}
                 onChange={(value) => setValue("to", value, { shouldValidate: true })}
