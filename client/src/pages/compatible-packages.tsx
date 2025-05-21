@@ -3,7 +3,7 @@ import { useLocation, useParams } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -57,11 +57,24 @@ export default function CompatiblePackages() {
     setIsSending(true);
     
     try {
+      // Trovare il pacco compatibile
+      const selectedPackage = compatiblePackages.find(p => p.id === packageId);
+      
+      if (!selectedPackage) {
+        toast({
+          title: "Errore",
+          description: "Pacco non trovato tra quelli compatibili.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // 1. Creare un match tra il viaggio e il pacco
       const matchData = {
         tripId,
         packageId,
         travelerId: currentUser.uid,
+        packageOwnerId: selectedPackage.userId,
         status: "accepted",
         createdAt: new Date().toISOString()
       };
@@ -69,38 +82,46 @@ export default function CompatiblePackages() {
       const matchRef = await addDoc(collection(db, "matches"), matchData);
       
       // 2. Creare una chat room tra viaggiatore e mittente
-      const packageDoc = compatiblePackages.find(p => p.id === packageId);
+      const chatRoomData = {
+        users: [currentUser.uid, selectedPackage.userId],
+        packageId,
+        tripId,
+        createdAt: new Date().toISOString()
+      };
       
-      if (packageDoc) {
-        const chatRoomData = {
-          users: [currentUser.uid, packageDoc.userId],
-          packageId,
-          tripId,
-          createdAt: new Date().toISOString()
-        };
-        
-        const chatRoomRef = await addDoc(collection(db, "chatRooms"), chatRoomData);
-        
-        // 3. Aggiornare lo stato del pacco
-        const packageRef = doc(db, "packages", packageId);
+      const chatRoomRef = await addDoc(collection(db, "chatRooms"), chatRoomData);
+      
+      // 3. Aggiornare lo stato del pacco
+      const packageRef = doc(db, "packages", packageId);
+      
+      try {
+        // Prova prima la chiamata API
         await fetch(`/api/packages/${packageId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "in_progress" })
         });
-        
-        // 4. Notificare l'utente
-        toast({
-          title: "Pacco accettato!",
-          description: "Hai accettato con successo il pacco. La chat con il mittente è stata creata.",
-          variant: "default"
+      } catch (error) {
+        console.error("Errore API, tentativo di update diretto:", error);
+        // Fallback: update diretto via Firebase
+        // (Questo è necessario perché vedo che le chiamate API stanno fallendo)
+        await updateDoc(doc(db, "packages", packageId), {
+          status: "in_progress",
+          updatedAt: new Date().toISOString()
         });
-        
-        // 5. Reindirizzare alla chat con il mittente
-        setTimeout(() => {
-          navigate("/my-shipments?tab=trips");
-        }, 1500);
       }
+      
+      // 4. Notificare l'utente
+      toast({
+        title: "Pacco accettato!",
+        description: "Hai accettato con successo il pacco. La chat con il mittente è stata creata.",
+        variant: "default"
+      });
+      
+      // 5. Reindirizzare direttamente alla chat con il mittente
+      setTimeout(() => {
+        navigate(`/chat/${selectedPackage.userId}`);
+      }, 1000);
     } catch (error) {
       console.error("Errore durante l'accettazione del pacco:", error);
       toast({
