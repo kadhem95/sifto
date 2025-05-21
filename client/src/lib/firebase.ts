@@ -243,6 +243,33 @@ export const createTrip = async (tripData: any) => {
   }
 };
 
+// Match functions
+export const createMatch = async (matchData: any) => {
+  try {
+    // Create the match document
+    const matchRef = await addDoc(collection(db, 'matches'), {
+      ...matchData,
+      createdAt: new Date().toISOString(),
+      status: 'accepted'
+    });
+    
+    // Update the package status to 'matched'
+    if (matchData.packageId) {
+      const packageRef = doc(db, 'packages', matchData.packageId);
+      await updateDoc(packageRef, {
+        status: 'matched',
+        matchId: matchRef.id,
+        travelerId: matchData.travelerId
+      });
+    }
+    
+    return matchRef;
+  } catch (error) {
+    console.error("Error creating match:", error);
+    throw error;
+  }
+};
+
 // Chat functions
 export const createChatRoom = async (senderId: string, receiverId: string, packageId?: string, tripId?: string) => {
   try {

@@ -21,7 +21,7 @@ interface PackageCardProps {
   deadline: string;
   price: number;
   size: "small" | "medium" | "large";
-  onContact: (packageId: string) => void;
+  onAccept: (packageId: string) => void;
   className?: string;
 }
 
@@ -33,7 +33,7 @@ export default function PackageCard({
   deadline,
   price,
   size,
-  onContact,
+  onAccept,
   className = "",
 }: PackageCardProps) {
   const [showReviews, setShowReviews] = useState(false);
@@ -109,10 +109,10 @@ export default function PackageCard({
               <span className="text-neutral-500">{getSizeLabel()}</span>
             </div>
             <Button
-              onClick={() => onContact(id)}
-              className="bg-secondary text-white font-medium rounded-lg px-4 py-2 h-auto"
+              onClick={() => onAccept(id)}
+              className="bg-[#3DD598] hover:bg-[#5ae0ad] text-white font-medium rounded-lg px-4 py-2 h-auto"
             >
-              Contatta
+              Accetta Pacco
             </Button>
           </div>
         </div>

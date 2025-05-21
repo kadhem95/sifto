@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { createTrip } from "@/lib/firebase";
 
-// Schema semplificato del viaggio
+// Schema del viaggio
 const tripFormSchema = z.object({
   from: z.string().min(2, "È richiesta la località di partenza"),
   to: z.string().min(2, "È richiesta la località di destinazione"),
   date: z.string().min(1, "È richiesta la data di viaggio"),
+  capacity: z.coerce.number().min(1, "È richiesta la capacità di trasporto"),
 });
 
 type TripFormValues = z.infer<typeof tripFormSchema>;
@@ -34,6 +35,7 @@ export default function ReportTrip() {
       from: "",
       to: "",
       date: "",
+      capacity: 1,
     },
   });
 
@@ -52,6 +54,8 @@ export default function ReportTrip() {
         from: data.from,
         to: data.to,
         date: data.date,
+        capacity: data.capacity,
+        status: "active",
         transportType: "unspecified", // Valore predefinito
         notes: "", // Valore predefinito
         createdAt: new Date().toISOString(),
@@ -137,7 +141,7 @@ export default function ReportTrip() {
           </div>
 
           {/* Campo Data */}
-          <div className="mb-6">
+          <div className="mb-4">
             <Label htmlFor="date" className="block text-neutral-700 font-medium mb-2">Data di viaggio</Label>
             <Input
               id="date"
@@ -147,6 +151,22 @@ export default function ReportTrip() {
             />
             {errors.date && (
               <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
+            )}
+          </div>
+
+          {/* Campo Capacità */}
+          <div className="mb-6">
+            <Label htmlFor="capacity" className="block text-neutral-700 font-medium mb-2">Capacità di trasporto</Label>
+            <Input
+              id="capacity"
+              type="number"
+              min="1"
+              className="w-full bg-neutral-100 rounded-lg px-4 py-3 border border-neutral-300 h-auto"
+              placeholder="Numero di pacchi che puoi trasportare"
+              {...register("capacity")}
+            />
+            {errors.capacity && (
+              <p className="text-red-500 text-sm mt-1">{errors.capacity.message}</p>
             )}
           </div>
 

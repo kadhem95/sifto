@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/app-layout";
 import PackageCard from "@/components/packages/package-card";
 import { useAuth } from "@/hooks/use-auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db, createChatRoom } from "@/lib/firebase";
+import { db, createChatRoom, createMatch } from "@/lib/firebase";
 
 interface PackageSender {
   id: string;
@@ -118,12 +118,22 @@ export default function PackagesList() {
     fetchData();
   }, [currentUser, navigate]);
 
-  const handleContactSender = async (packageId: string) => {
+  const handleAcceptPackage = async (packageId: string) => {
     if (!currentUser || !tripDetails) return;
     
     try {
       const pkg = packages.find(p => p.id === packageId);
       if (!pkg) return;
+      
+      // Create a match between the package and the trip
+      const matchRef = await createMatch({
+        packageId: packageId,
+        tripId: tripDetails.id,
+        travelerId: currentUser.uid,
+        senderId: pkg.sender.id,
+        status: "accepted",
+        createdAt: new Date().toISOString()
+      });
       
       // Create a chat room between the traveler and the package sender
       const chatRoom = await createChatRoom(
@@ -136,7 +146,7 @@ export default function PackagesList() {
       // Navigate to the chat screen
       navigate(`/chat/${chatRoom.id}`);
     } catch (error) {
-      console.error("Error creating chat room:", error);
+      console.error("Error accepting package:", error);
     }
   };
 
@@ -206,7 +216,7 @@ export default function PackagesList() {
               deadline={pkg.deadline}
               price={pkg.price}
               size={pkg.size}
-              onContact={handleContactSender}
+              onAccept={handleAcceptPackage}
             />
           ))
         ) : (
