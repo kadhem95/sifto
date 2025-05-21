@@ -126,15 +126,7 @@ export default function CompatiblePackages() {
         chatRoomId: chatRoomRef.id
       });
       
-      // Aggiungiamo un messaggio di benvenuto alla chat
-      const welcomeMessageData = {
-        senderId: "system",
-        content: "Benvenuto nella chat! Ora puoi comunicare con il mittente del pacco.",
-        timestamp: new Date().toISOString(),
-        type: "text"
-      };
-      
-      await addDoc(collection(db, "chatRooms", chatRoomRef.id, "messages"), welcomeMessageData);
+      // La chat inizia senza messaggi automatici per una migliore esperienza utente
       
       toast({
         title: "Chat creata!",
