@@ -277,12 +277,12 @@ export default function Profile() {
         return;
       }
       
-      // Verifica dimensione (max 2MB per maggiore velocità)
-      const maxSize = 2 * 1024 * 1024; // 2MB
+      // Verifica dimensione (max 5MB per permettere foto di buona qualità)
+      const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
         toast({
           title: "Immagine troppo grande",
-          description: "Per favore seleziona un'immagine di dimensioni inferiori a 2MB",
+          description: "Per favore seleziona un'immagine di dimensioni inferiori a 5MB",
           variant: "destructive",
           duration: 3000
         });
@@ -297,18 +297,31 @@ export default function Profile() {
         duration: 3000
       });
       
-      // Utilizziamo la nuova funzione semplificata per caricare l'immagine
-      const downloadURL = await uploadProfilePicture(file);
-      
-      toast({
-        title: "Immagine aggiornata",
-        description: "La tua immagine del profilo è stata caricata con successo!",
-        duration: 3000
-      });
-      
-      // Forziamo un refresh della pagina per vedere subito la nuova immagine
-      window.location.reload();
-      
+      try {
+        // Prima proviamo con il nuovo sistema che utilizza Firebase Storage e fallback base64
+        const imageUrl = await uploadProfilePicture(file);
+        
+        if (imageUrl) {
+          toast({
+            title: "Immagine aggiornata",
+            description: "La tua immagine del profilo è stata caricata con successo!",
+            duration: 3000
+          });
+          
+          // Forziamo un refresh della pagina per vedere subito la nuova immagine
+          window.location.reload();
+        }
+      } catch (uploadError) {
+        console.error("Errore principale di upload:", uploadError);
+        
+        // Se fallisce tutto, mostra un errore più specifico
+        toast({
+          title: "Errore",
+          description: "Non è stato possibile caricare l'immagine. Riprova con un'immagine più piccola.",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
     } catch (error) {
       console.error("Errore durante il caricamento dell'immagine:", error);
       toast({
