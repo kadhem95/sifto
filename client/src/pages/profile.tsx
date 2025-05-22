@@ -13,8 +13,7 @@ import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "@/lib/firebase";
-import { uploadUserProfileImage } from "@/lib/profileImageHelper";
-import { updateProfileWithGeneratedAvatar } from "@/lib/simpleProfileImage";
+import { updateUserAvatar } from "@/lib/avatarManager";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -244,7 +243,7 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire il caricamento di un'immagine di profilo
+  // Funzione semplificata per gestire l'avatar dell'utente
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentUser) {
       toast({
@@ -256,74 +255,30 @@ export default function Profile() {
       return;
     }
     
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      console.log("Nessun file selezionato");
-      return;
-    }
-    
     setIsUploadingImage(true);
     
     try {
-      const file = files[0];
-      
-      // Controlliamo che sia un'immagine
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Formato non supportato",
-          description: "Per favore seleziona un'immagine (JPG, PNG, GIF)",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-        return;
-      }
-      
-      console.log(`Caricamento immagine di profilo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
-      
-      try {
-        // Prima proviamo a caricare l'immagine su Firebase Storage
-        const downloadURL = await uploadUserProfileImage(file);
-        
-        if (downloadURL) {
-          console.log("Immagine caricata con successo su Firebase Storage");
-          toast({
-            title: "Immagine aggiornata",
-            description: "La tua immagine del profilo è stata caricata con successo!",
-            duration: 3000
-          });
-          
-          // Forziamo un refresh della pagina per vedere subito la nuova immagine
-          window.location.reload();
-          return;
-        }
-      } catch (storageError) {
-        console.error("Errore con Firebase Storage:", storageError);
-        console.log("Passaggio alla soluzione alternativa...");
-      }
-      
-      // Se arriviamo qui, significa che il caricamento su Storage è fallito
-      // Utilizziamo la soluzione alternativa con avatar generato
-      console.log("Utilizzo avatar generato come fallback");
-      const avatarUrl = await updateProfileWithGeneratedAvatar();
+      // Generiamo un nuovo avatar personalizzato
+      console.log("Generazione avatar personalizzato...");
+      const avatarUrl = await updateUserAvatar();
       
       if (avatarUrl) {
         toast({
-          title: "Immagine aggiornata",
-          description: "Il tuo avatar è stato generato con successo!",
+          title: "Avatar aggiornato",
+          description: "Il tuo avatar è stato aggiornato con successo!",
           duration: 3000
         });
         
         // Forziamo un refresh della pagina per vedere subito il nuovo avatar
         window.location.reload();
       } else {
-        throw new Error("Non è stato possibile aggiornare l'immagine del profilo");
+        throw new Error("Non è stato possibile aggiornare l'avatar");
       }
     } catch (error) {
-      console.error("Errore durante la gestione dell'immagine:", error);
+      console.error("Errore durante l'aggiornamento dell'avatar:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un problema durante l'aggiornamento dell'immagine. Riprova più tardi.",
+        description: "Si è verificato un problema durante l'aggiornamento dell'avatar. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
@@ -336,7 +291,7 @@ export default function Profile() {
     }
   };
   
-  // Rimuoviamo la funzione per generare avatar e utilizziamo solo immagini reali
+  // Utilizziamo avatar generati automaticamente
 
   const handleLogout = async () => {
     const auth = getAuth();
