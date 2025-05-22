@@ -77,3 +77,22 @@ export async function updateProfileWithGeneratedAvatar(): Promise<string | null>
     return null;
   }
 }
+
+/**
+ * Assicura che l'utente abbia sempre un'immagine profilo
+ * Da utilizzare quando serve forzare la presenza di un'immagine
+ */
+export async function ensureUserHasProfileImage(): Promise<void> {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+    
+    // Se l'utente non ha un'immagine o ha un problema con l'immagine esistente
+    if (!currentUser.photoURL) {
+      console.log("Utente senza immagine profilo, generazione automatica");
+      await updateProfileWithGeneratedAvatar();
+    }
+  } catch (error) {
+    console.error("Errore nel controllo dell'immagine profilo:", error);
+  }
+}
