@@ -279,23 +279,34 @@ export default function Profile() {
       
       console.log("Caricamento immagine di profilo:", file.name, "dimensione:", file.size / 1024, "KB");
       
-      // Creiamo un nome di file univoco con timestamp
+      // Creiamo un nome di file univoco con timestamp e estensione originale
       const timestamp = Date.now();
-      const filename = `profile_${currentUser.uid}_${timestamp}`;
+      const fileExtension = file.name.split('.').pop() || 'jpg';
+      const filename = `profile_${currentUser.uid}_${timestamp}.${fileExtension}`;
       
       try {
-        // Creiamo riferimento a Firebase Storage
-        console.log("Creazione riferimento a Firebase Storage...");
+        // Logging più dettagliato per tracciare ogni passo del processo
+        console.log("--------- INIZIO PROCESSO UPLOAD IMMAGINE ---------");
+        
+        // Creiamo riferimento a Firebase Storage con percorso completo
+        console.log("1. Creazione riferimento a Firebase Storage...");
+        console.log(`   Path: profile_images/${filename}`);
         const storageRef = ref(storage, `profile_images/${filename}`);
         
-        // Upload del file
-        console.log("Inizio upload su Firebase Storage...");
-        await uploadBytes(storageRef, file);
+        // Upload del file con gestione più dettagliata
+        console.log("2. Inizio upload su Firebase Storage...");
+        console.log(`   Dimensione file: ${(file.size / 1024).toFixed(2)} KB`);
+        console.log(`   Tipo file: ${file.type}`);
+        
+        const result = await uploadBytes(storageRef, file);
+        console.log("3. Upload completato con successo!");
+        console.log(`   Bytes trasferiti: ${result.metadata.size}`);
         
         // Otteniamo l'URL pubblico dell'immagine
-        console.log("Recupero URL dell'immagine...");
+        console.log("4. Recupero URL pubblico dell'immagine...");
         const downloadURL = await getDownloadURL(storageRef);
-        console.log("URL immagine ottenuto:", downloadURL);
+        console.log("5. URL immagine ottenuto con successo");
+        console.log(`   URL: ${downloadURL}`);
         
         // Aggiorniamo Firebase Auth
         console.log("Aggiornamento profilo in Firebase Auth...");
@@ -305,21 +316,28 @@ export default function Profile() {
         console.log("Profilo Auth aggiornato con la nuova immagine");
         
         // Aggiorniamo anche Firestore
-        console.log("Aggiornamento profilo in Firestore...");
+        console.log("6. Aggiornamento profilo in Firestore...");
         const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
         const userSnapshot = await getDocs(userQuery);
         
         if (!userSnapshot.empty) {
           const userDoc = userSnapshot.docs[0];
-          console.log(`Aggiornamento documento esistente: ${userDoc.id}`);
-          await updateDoc(doc(db, 'users', userDoc.id), {
+          console.log(`7. Aggiornamento documento esistente con ID: ${userDoc.id}`);
+          
+          // Aggiornamento con l'URL dell'immagine
+          const updateData = {
             photoURL: downloadURL,
             updatedAt: new Date().toISOString()
-          });
-          console.log("Profilo Firestore aggiornato con la nuova immagine");
+          };
+          
+          console.log("   Dati da aggiornare:", updateData);
+          await updateDoc(doc(db, 'users', userDoc.id), updateData);
+          console.log("8. Profilo Firestore aggiornato correttamente!");
         } else {
-          console.log("Creazione nuovo profilo utente in Firestore...");
-          await addDoc(collection(db, 'users'), {
+          console.log("7. Utente non trovato in Firestore, creazione nuovo profilo...");
+          
+          // Creazione nuovo profilo con tutti i dati necessari
+          const newUserData = {
             uid: currentUser.uid,
             displayName: userName,
             email: currentUser.email || '',
@@ -328,8 +346,11 @@ export default function Profile() {
             updatedAt: new Date().toISOString(),
             rating: 0,
             reviewCount: 0
-          });
-          console.log("Nuovo profilo utente creato in Firestore con l'immagine");
+          };
+          
+          console.log("   Dati nuovo utente:", newUserData);
+          const newUserRef = await addDoc(collection(db, 'users'), newUserData);
+          console.log(`8. Nuovo profilo utente creato con ID: ${newUserRef.id}`);
         }
         
         // Mostriamo un messaggio di successo
@@ -545,7 +566,7 @@ export default function Profile() {
                       <div>
                         <p className="font-medium text-sm">{review.sender?.name}</p>
                         <div className="flex items-center">
-                          <Rating value={review.rating} readOnly size="xs" />
+                          <Rating value={review.rating} readOnly size="sm" />
                           <span className="text-xs text-neutral-500 ml-1">
                             {formatDate(review.createdAt)}
                           </span>
