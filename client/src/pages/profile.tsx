@@ -12,7 +12,7 @@ import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { uploadImageAsBase64, optimizeImage } from "@/lib/directBase64Upload";
+import { updateUserAvatar, randomizeAvatarColor } from "@/lib/customAvatarUpload";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -254,89 +254,38 @@ export default function Profile() {
       return;
     }
     
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      console.log("Nessun file selezionato");
-      return;
-    }
-    
     setIsUploadingImage(true);
     
     try {
-      const file = files[0];
-      
-      // Verifica che sia un'immagine
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Formato non supportato",
-          description: "Per favore seleziona un'immagine (JPG, PNG, GIF)",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-        return;
-      }
-      
-      // Verifica dimensione (max 5MB per permettere foto di buona qualità)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        toast({
-          title: "Immagine troppo grande",
-          description: "Per favore seleziona un'immagine di dimensioni inferiori a 5MB",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-        return;
-      }
-      
       // Mostriamo un messaggio di caricamento in corso
       toast({
-        title: "Caricamento in corso",
-        description: "Stiamo caricando la tua immagine...",
-        duration: 3000
+        title: "Aggiornamento avatar",
+        description: "Stiamo generando un nuovo avatar per il tuo profilo...",
+        duration: 2000
       });
       
-      try {
-        // Prima ottimizziamo l'immagine per ridurne le dimensioni e garantire il caricamento
-        console.log("Ottimizzazione dell'immagine in corso...");
-        const optimizedFile = await optimizeImage(file, 600, 0.7);
-        console.log("Immagine ottimizzata con successo");
+      // Generiamo un nuovo avatar con colore casuale
+      const avatarUrl = await randomizeAvatarColor();
+      
+      if (avatarUrl) {
+        console.log("Avatar aggiornato con successo!");
         
-        // Carichiamo l'immagine come base64 (metodo più affidabile)
-        console.log("Caricamento dell'immagine come base64...");
-        const imageUrl = await uploadImageAsBase64(optimizedFile);
-        
-        if (imageUrl) {
-          console.log("Immagine caricata con successo!");
-          
-          toast({
-            title: "Immagine aggiornata",
-            description: "La tua immagine del profilo è stata caricata con successo!",
-            duration: 3000
-          });
-          
-          // Forziamo un refresh della pagina per vedere subito la nuova immagine
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        }
-      } catch (uploadError) {
-        console.error("Errore principale di upload:", uploadError);
-        
-        // Se fallisce tutto, mostra un errore più specifico
         toast({
-          title: "Errore",
-          description: "Non è stato possibile caricare l'immagine. Riprova con un'immagine più piccola.",
-          variant: "destructive",
+          title: "Avatar aggiornato",
+          description: "Il tuo avatar è stato generato con successo!",
           duration: 3000
         });
+        
+        // Forziamo un refresh della pagina per vedere subito il nuovo avatar
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     } catch (error) {
-      console.error("Errore durante il caricamento dell'immagine:", error);
+      console.error("Errore durante l'aggiornamento dell'avatar:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un problema durante il caricamento dell'immagine. Riprova più tardi.",
+        description: "Si è verificato un problema durante l'aggiornamento dell'avatar. Riprova più tardi.",
         variant: "destructive",
         duration: 3000
       });
@@ -349,7 +298,7 @@ export default function Profile() {
     }
   };
   
-  // Utilizziamo immagini caricate dall'utente
+  // Utilizziamo avatar generati in base al nome utente
 
   const handleLogout = async () => {
     const auth = getAuth();
