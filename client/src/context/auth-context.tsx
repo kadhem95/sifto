@@ -1,7 +1,6 @@
 import { createContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
-import { getUserProfile, auth } from "@/lib/firebase";
-import { ensureUserHasAvatar } from "@/lib/avatarService";
+import { auth, getUserProfile } from "@/lib/firebase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,14 +31,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (user) {
         try {
-          // Assicuriamoci che l'utente abbia sempre un'immagine profilo
-          await ensureUserHasAvatar();
-          
           // Recuperiamo il profilo completo
           const profile = await getUserProfile(user.uid);
           setUserProfile(profile);
         } catch (error) {
           console.error("Error fetching user profile:", error);
+          // Fallback semplice se c'è un errore
+          setUserProfile({
+            uid: user.uid,
+            displayName: user.displayName || 'Utente',
+            photoURL: user.photoURL
+          });
         }
       } else {
         setUserProfile(null);
