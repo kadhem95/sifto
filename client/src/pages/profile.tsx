@@ -362,105 +362,7 @@ export default function Profile() {
     }
   };
   
-  // Funzione per generare un avatar basato sul nome
-  const handleGenerateAvatar = async () => {
-    if (!currentUser) {
-      toast({
-        title: "Errore",
-        description: "Devi essere loggato per generare un avatar",
-        variant: "destructive",
-        duration: 3000
-      });
-      return;
-    }
-    
-    setIsUploadingImage(true);
-    
-    try {
-      console.log("Generazione nuovo avatar...");
-      
-      // Creiamo un colore unico basato sul nome utente
-      const hashCode = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return hash;
-      };
-      
-      const intToRGB = (i: number) => {
-        const colors = [
-          '0D8ABC', // Blue primario
-          '7048E8', // Purple
-          '00A896', // Teal
-          'F58A07', // Orange
-          'F25F5C', // Coral
-        ];
-        return colors[Math.abs(i) % colors.length];
-      };
-      
-      // Scegliamo un colore basato sul nome utente per avere consistenza
-      const color = intToRGB(hashCode(userName));
-      
-      // Crea un nuovo avatar con il nome utente
-      // Aggiungiamo parametro bold=true per rendere le iniziali più visibili
-      const timestamp = Date.now(); // Aggiungiamo timestamp per evitare cache
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=${color}&color=fff&size=256&bold=true&t=${timestamp}`;
-      
-      console.log("Nuovo avatar generato:", avatarUrl);
-      
-      // Aggiorna il profilo su Firebase Auth
-      await updateProfile(currentUser, {
-        photoURL: avatarUrl
-      });
-      console.log("Profilo Auth aggiornato con il nuovo avatar");
-      
-      // Aggiorna anche Firestore per mantenere i dati sincronizzati
-      const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
-      const userSnapshot = await getDocs(userQuery);
-      
-      if (!userSnapshot.empty) {
-        const userDoc = userSnapshot.docs[0];
-        await updateDoc(doc(db, 'users', userDoc.id), {
-          photoURL: avatarUrl,
-          updatedAt: new Date().toISOString()
-        });
-        console.log("Profilo Firestore aggiornato con il nuovo avatar");
-      } else {
-        await addDoc(collection(db, 'users'), {
-          uid: currentUser.uid,
-          displayName: userName,
-          email: currentUser.email || '',
-          photoURL: avatarUrl,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          rating: 0,
-          reviewCount: 0
-        });
-        console.log("Nuovo profilo utente creato in Firestore");
-      }
-      
-      toast({
-        title: "Avatar aggiornato",
-        description: "Il tuo nuovo avatar è stato generato con successo!",
-        duration: 3000
-      });
-      
-      // Forziamo un refresh della pagina per vedere subito il nuovo avatar
-      window.location.reload();
-      
-    } catch (error) {
-      console.error("Errore durante la generazione dell'avatar:", error);
-      toast({
-        title: "Errore",
-        description: "Non è stato possibile generare un nuovo avatar. Riprova più tardi.",
-        variant: "destructive",
-        duration: 3000
-      });
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
+  // Rimuoviamo la funzione per generare avatar e utilizziamo solo immagini reali
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -513,19 +415,7 @@ export default function Profile() {
               
               {/* Bottoni per gestire l'immagine del profilo */}
               <div className="absolute bottom-0 right-0 flex">
-                {/* Bottone per generare avatar */}
-                <button 
-                  className="bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors mr-2"
-                  onClick={handleGenerateAvatar}
-                  disabled={isUploadingImage}
-                  title="Genera avatar dalle iniziali"
-                >
-                  {isUploadingImage ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <UserIcon size={16} />
-                  )}
-                </button>
+                {/* Rimuoviamo il bottone per generare avatar e lasciamo solo quello per caricare immagine */}
                 
                 {/* Bottone per caricare un'immagine */}
                 <button 

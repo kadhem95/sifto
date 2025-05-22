@@ -1,0 +1,16 @@
+Error fetching profile data: 
+_FirebaseError {code: "failed-precondition", customData: undefined, name: "FirebaseError", toString: ƒ}
+code: "failed-precondition"
+customData: undefined
+name: "FirebaseError"
+toString: ƒ () => `${this.name}: [code=${this.code}]: ${this.message}`
+column: 10
+line: 615
+message: "The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/wassil-7fe2d/firestore/indexes?create_composite=Ckxwcm9qZWN0cy93YXNzaWwtN2ZlMmQvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Jldmlld3MvaW5kZXhlcy9fEAEaDgoKcmVjZWl2ZXJJZBABGg0KCWNyZWF0ZWRBdBACGgwKCF9fbmFtZV9fEAI"
+sourceURL: "https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GIEREJSR.js"
+stack: "_FirebaseError@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GIEREJSR.js:615:10↵FirestoreError@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:2782:10↵__PRIVATE_fromRpcStatus@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:7111:32↵__PRIVATE_fromWatchChange@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:7112:6↵onNext@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:12837:40↵@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:15860:69↵@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js:15891:52"
+[[Prototype]]: Object
+
+t@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12639
+value@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32772
+@https://cb7465c7-d0e1-4d2c-b6f6-4264626a010d-00-2l1b11659kyoi.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34410
