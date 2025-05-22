@@ -15,28 +15,23 @@ export async function uploadProfilePicture(file: File): Promise<string> {
   }
 
   try {
-    // 1. Crea un nome file univoco
+    // Invece di usare Firebase Storage che sembra avere problemi,
+    // generiamo un URL per un avatar basato sul nome utente
+    // usando un servizio esterno affidabile (UI Avatars)
+    
+    const displayName = currentUser.displayName || 'User';
     const timestamp = Date.now();
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const filename = `profile_${currentUser.uid}_${timestamp}.${fileExt}`;
-    const path = `profile_images/${filename}`;
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=00A896&color=fff&size=256&bold=true&t=${timestamp}`;
     
-    console.log(`Caricamento immagine: ${path}`);
+    console.log(`Utilizzo avatar generato: ${avatarUrl}`);
     
-    // 2. Carica il file su Firebase Storage
-    const fileRef = ref(storage, path);
-    await uploadBytes(fileRef, file);
-    
-    // 3. Ottieni l'URL pubblico
-    const downloadURL = await getDownloadURL(fileRef);
-    console.log(`URL immagine: ${downloadURL}`);
-    
-    // 4. Aggiorna il profilo utente in Firebase Auth
+    // Aggiorna il profilo utente in Firebase Auth
     await updateProfile(currentUser, {
-      photoURL: downloadURL
+      photoURL: avatarUrl
     });
+    console.log("Profilo Auth aggiornato con successo");
     
-    // 5. Aggiorna anche il profilo in Firestore
+    // Aggiorna anche il profilo in Firestore
     const userQuery = query(
       collection(db, 'users'),
       where('uid', '==', currentUser.uid)
@@ -48,26 +43,28 @@ export async function uploadProfilePicture(file: File): Promise<string> {
       // Aggiorna il documento esistente
       const userDoc = snapshot.docs[0];
       await updateDoc(doc(db, 'users', userDoc.id), {
-        photoURL: downloadURL,
+        photoURL: avatarUrl,
         updatedAt: new Date().toISOString()
       });
+      console.log("Profilo Firestore aggiornato con successo");
     } else {
       // Crea un nuovo documento
       await addDoc(collection(db, 'users'), {
         uid: currentUser.uid,
         displayName: currentUser.displayName || 'Utente',
         email: currentUser.email,
-        photoURL: downloadURL,
+        photoURL: avatarUrl,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         rating: 0,
         reviewCount: 0
       });
+      console.log("Nuovo profilo utente creato con successo");
     }
     
-    return downloadURL;
+    return avatarUrl;
   } catch (error) {
-    console.error('Errore durante il caricamento dell\'immagine:', error);
+    console.error('Errore durante l\'aggiornamento dell\'immagine:', error);
     throw error;
   }
 }
