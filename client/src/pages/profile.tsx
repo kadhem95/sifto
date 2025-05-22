@@ -12,7 +12,7 @@ import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { uploadImageToStorage, resizeImage } from "@/lib/firebaseImageUpload";
+import { uploadAndSetProfileImage, resizeImageSimple } from "@/lib/simpleImageUpload";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -298,17 +298,17 @@ export default function Profile() {
       });
       
       try {
-        // Prima ridimensioniamo l'immagine per renderla più leggera
+        // Ridimensioniamo l'immagine per renderla più leggera
         console.log("Ridimensionamento dell'immagine...");
-        const resizedImage = await resizeImage(file, 500, 500);
+        const resizedImage = await resizeImageSimple(file, 500);
         console.log("Immagine ridimensionata con successo");
         
-        // Carichiamo l'immagine su Firebase Storage
-        console.log("Caricamento su Firebase Storage...");
-        const imageUrl = await uploadImageToStorage(resizedImage);
+        // Aggiorniamo l'immagine del profilo utilizzando il nostro metodo semplificato
+        console.log("Caricamento dell'immagine del profilo...");
+        const avatarUrl = await uploadAndSetProfileImage(resizedImage);
         
-        if (imageUrl) {
-          console.log("Immagine caricata con successo:", imageUrl);
+        if (avatarUrl) {
+          console.log("Immagine del profilo aggiornata con successo");
           
           toast({
             title: "Immagine aggiornata",
