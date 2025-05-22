@@ -12,7 +12,7 @@ import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { uploadProfilePicture } from "@/lib/simpleImageUpload";
+import { uploadImageAsBase64, optimizeImage } from "@/lib/directBase64Upload";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -298,10 +298,18 @@ export default function Profile() {
       });
       
       try {
-        // Prima proviamo con il nuovo sistema che utilizza Firebase Storage e fallback base64
-        const imageUrl = await uploadProfilePicture(file);
+        // Prima ottimizziamo l'immagine per ridurne le dimensioni e garantire il caricamento
+        console.log("Ottimizzazione dell'immagine in corso...");
+        const optimizedFile = await optimizeImage(file, 600, 0.7);
+        console.log("Immagine ottimizzata con successo");
+        
+        // Carichiamo l'immagine come base64 (metodo più affidabile)
+        console.log("Caricamento dell'immagine come base64...");
+        const imageUrl = await uploadImageAsBase64(optimizedFile);
         
         if (imageUrl) {
+          console.log("Immagine caricata con successo!");
+          
           toast({
             title: "Immagine aggiornata",
             description: "La tua immagine del profilo è stata caricata con successo!",
@@ -309,7 +317,9 @@ export default function Profile() {
           });
           
           // Forziamo un refresh della pagina per vedere subito la nuova immagine
-          window.location.reload();
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         }
       } catch (uploadError) {
         console.error("Errore principale di upload:", uploadError);
