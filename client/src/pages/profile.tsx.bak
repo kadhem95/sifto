@@ -11,8 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, auth, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
+import { db, uploadProfileImage, auth, storage } from "@/lib/firebase";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -361,6 +361,36 @@ export default function Profile() {
       }
     }
   };
+        
+        toast({
+          title: "Immagine aggiornata",
+          description: "La tua immagine del profilo è stata caricata con successo!",
+          duration: 3000
+        });
+        
+        // Forziamo un refresh della pagina per vedere subito la nuova immagine
+        window.location.reload();
+        
+      } catch (uploadError) {
+        console.error("Errore durante l'upload dell'immagine:", uploadError);
+        throw uploadError;
+      }
+    } catch (error) {
+      console.error("Errore durante la gestione dell'immagine:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un problema durante il caricamento dell'immagine. Riprova più tardi.",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsUploadingImage(false);
+      // Reset del campo file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
   
   // Funzione per generare un avatar basato sul nome
   const handleGenerateAvatar = async () => {
@@ -627,78 +657,86 @@ export default function Profile() {
               </div>
               <div className="bg-neutral-50 p-3 rounded-lg">
                 <p className="text-neutral-500 text-sm">Totale guadagnato</p>
-                <p className="text-xl font-semibold text-neutral-900">€{stats.totalEarned.toFixed(2)}</p>
+                <p className="text-xl font-semibold text-secondary">{stats.totalEarned}€</p>
               </div>
               <div className="bg-neutral-50 p-3 rounded-lg">
                 <p className="text-neutral-500 text-sm">Totale speso</p>
-                <p className="text-xl font-semibold text-neutral-900">€{stats.totalSpent.toFixed(2)}</p>
+                <p className="text-xl font-semibold text-primary">{stats.totalSpent}€</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
-          <div className="p-4">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Ultime recensioni ricevute</h3>
-            
-            {reviews.length > 0 ? (
-              <div className="space-y-4 mt-4">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b border-neutral-200 pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center mb-2">
-                      <Avatar className="h-8 w-8 mr-2">
-                        <AvatarImage src={review.sender?.photoURL} />
-                        <AvatarFallback className="bg-primary text-white">
-                          {review.sender?.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{review.sender?.name}</p>
-                        <div className="flex items-center">
-                          <Rating value={review.rating} readOnly size="xs" />
-                          <span className="text-xs text-neutral-500 ml-1">
-                            {formatDate(review.createdAt)}
-                          </span>
+        {reviews.length > 0 && (
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-4">Recensioni recenti</h3>
+              
+              {reviews.map((review) => (
+                <div key={review.id} className="mb-4 border-b border-neutral-100 pb-4 last:border-0 last:mb-0 last:pb-0">
+                  <div className="flex items-start">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={review.sender?.photoURL} alt={review.sender?.name} />
+                      <AvatarFallback>{review.sender?.name.charAt(0) || "U"}</AvatarFallback>
+                    </Avatar>
+                    <div className="ml-3 flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-neutral-900">{review.sender?.name || "Anonymous"}</p>
+                          <div className="flex items-center">
+                            <Rating value={review.rating} readOnly size="sm" />
+                            <span className="text-xs text-neutral-500 ml-2">
+                              {formatDate(review.createdAt)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      {review.comment && (
+                        <p className="text-neutral-700 mt-1 text-sm">{review.comment}</p>
+                      )}
                     </div>
-                    <p className="text-sm text-neutral-700">{review.comment}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-neutral-500">
-                <p>Non hai ancora ricevuto recensioni</p>
-                <p className="text-sm mt-1">Completa più spedizioni per ricevere feedback</p>
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informazioni legali</h3>
+            <div className="text-sm text-neutral-500 space-y-3">
+              <p>
+                <strong className="font-medium text-neutral-700">Disclaimer:</strong> PackShare non è responsabile del contenuto dei pacchi. Gli utenti sono gli unici responsabili di garantire che i loro pacchi rispettino tutte le leggi e i regolamenti applicabili.
+              </p>
+              <p>
+                <strong className="font-medium text-neutral-700">Privacy Policy:</strong> Raccogliamo le informazioni personali minime necessarie per fornire il nostro servizio. I tuoi dati sono protetti e mai condivisi con terze parti.
+              </p>
+              <p>
+                <strong className="font-medium text-neutral-700">Termini di Servizio:</strong> Utilizzando PackShare, accetti i nostri termini che includono un comportamento rispettoso verso gli altri utenti e il non utilizzo improprio della piattaforma.
+              </p>
+            </div>
           </div>
         </div>
 
-        <Button 
+        <Button
           onClick={() => setShowLogoutConfirm(true)}
-          variant="outline" 
-          className="w-full border-red-300 text-red-600 hover:bg-red-50"
+          className="w-full bg-neutral-100 text-neutral-700 font-medium rounded-lg py-4 h-auto mb-4"
         >
-          Esci dall'account
+          Disconnetti
         </Button>
-        
+
         <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Conferma logout</AlertDialogTitle>
+              <AlertDialogTitle>Sei sicuro di voler uscire?</AlertDialogTitle>
               <AlertDialogDescription>
-                Sei sicuro di voler uscire dall'account? Dovrai effettuare nuovamente l'accesso per utilizzare l'app.
+                Dovrai accedere nuovamente con il tuo numero di telefono per accedere al tuo account.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Esci
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleLogout}>Disconnetti</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
