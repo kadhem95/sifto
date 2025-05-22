@@ -13,6 +13,7 @@ import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "@/lib/firebase";
+import { uploadProfileImage } from "@/lib/profileImage";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -242,7 +243,8 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
   
-  // Funzione per gestire il caricamento di un'immagine di profilo
+  // Funzione semplificata per gestire il caricamento di un'immagine di profilo
+  // usando la utility centralizzata
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentUser) {
       toast({
@@ -277,83 +279,12 @@ export default function Profile() {
         return;
       }
       
-      console.log("Caricamento immagine di profilo:", file.name, "dimensione:", file.size / 1024, "KB");
+      console.log(`Caricamento immagine di profilo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
-      // Creiamo un nome di file univoco con timestamp e estensione originale
-      const timestamp = Date.now();
-      const fileExtension = file.name.split('.').pop() || 'jpg';
-      const filename = `profile_${currentUser.uid}_${timestamp}.${fileExtension}`;
+      // Utilizziamo la nuova funzione centralizzata per gestire tutto il processo
+      const downloadURL = await uploadProfileImage(file);
       
-      try {
-        // Logging più dettagliato per tracciare ogni passo del processo
-        console.log("--------- INIZIO PROCESSO UPLOAD IMMAGINE ---------");
-        
-        // Creiamo riferimento a Firebase Storage con percorso completo
-        console.log("1. Creazione riferimento a Firebase Storage...");
-        console.log(`   Path: profile_images/${filename}`);
-        const storageRef = ref(storage, `profile_images/${filename}`);
-        
-        // Upload del file con gestione più dettagliata
-        console.log("2. Inizio upload su Firebase Storage...");
-        console.log(`   Dimensione file: ${(file.size / 1024).toFixed(2)} KB`);
-        console.log(`   Tipo file: ${file.type}`);
-        
-        const result = await uploadBytes(storageRef, file);
-        console.log("3. Upload completato con successo!");
-        console.log(`   Bytes trasferiti: ${result.metadata.size}`);
-        
-        // Otteniamo l'URL pubblico dell'immagine
-        console.log("4. Recupero URL pubblico dell'immagine...");
-        const downloadURL = await getDownloadURL(storageRef);
-        console.log("5. URL immagine ottenuto con successo");
-        console.log(`   URL: ${downloadURL}`);
-        
-        // Aggiorniamo Firebase Auth
-        console.log("Aggiornamento profilo in Firebase Auth...");
-        await updateProfile(currentUser, {
-          photoURL: downloadURL
-        });
-        console.log("Profilo Auth aggiornato con la nuova immagine");
-        
-        // Aggiorniamo anche Firestore
-        console.log("6. Aggiornamento profilo in Firestore...");
-        const userQuery = query(collection(db, 'users'), where('uid', '==', currentUser.uid));
-        const userSnapshot = await getDocs(userQuery);
-        
-        if (!userSnapshot.empty) {
-          const userDoc = userSnapshot.docs[0];
-          console.log(`7. Aggiornamento documento esistente con ID: ${userDoc.id}`);
-          
-          // Aggiornamento con l'URL dell'immagine
-          const updateData = {
-            photoURL: downloadURL,
-            updatedAt: new Date().toISOString()
-          };
-          
-          console.log("   Dati da aggiornare:", updateData);
-          await updateDoc(doc(db, 'users', userDoc.id), updateData);
-          console.log("8. Profilo Firestore aggiornato correttamente!");
-        } else {
-          console.log("7. Utente non trovato in Firestore, creazione nuovo profilo...");
-          
-          // Creazione nuovo profilo con tutti i dati necessari
-          const newUserData = {
-            uid: currentUser.uid,
-            displayName: userName,
-            email: currentUser.email || '',
-            photoURL: downloadURL,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            rating: 0,
-            reviewCount: 0
-          };
-          
-          console.log("   Dati nuovo utente:", newUserData);
-          const newUserRef = await addDoc(collection(db, 'users'), newUserData);
-          console.log(`8. Nuovo profilo utente creato con ID: ${newUserRef.id}`);
-        }
-        
-        // Mostriamo un messaggio di successo
+      if (downloadURL) {
         toast({
           title: "Immagine aggiornata",
           description: "La tua immagine del profilo è stata caricata con successo!",
@@ -362,9 +293,8 @@ export default function Profile() {
         
         // Forziamo un refresh della pagina per vedere subito la nuova immagine
         window.location.reload();
-      } catch (uploadError) {
-        console.error("Errore durante l'upload dell'immagine:", uploadError);
-        throw uploadError;
+      } else {
+        throw new Error("Impossibile ottenere l'URL dell'immagine caricata");
       }
     } catch (error) {
       console.error("Errore durante la gestione dell'immagine:", error);
