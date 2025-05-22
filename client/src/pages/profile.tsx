@@ -12,7 +12,7 @@ import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { uploadProfileImage } from "@/lib/imageStorage";
+import { uploadProfilePicture } from "@/lib/simpleImageUpload";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -277,12 +277,12 @@ export default function Profile() {
         return;
       }
       
-      // Verifica dimensione (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Verifica dimensione (max 2MB per maggiore velocità)
+      const maxSize = 2 * 1024 * 1024; // 2MB
       if (file.size > maxSize) {
         toast({
           title: "Immagine troppo grande",
-          description: "Per favore seleziona un'immagine di dimensioni inferiori a 5MB",
+          description: "Per favore seleziona un'immagine di dimensioni inferiori a 2MB",
           variant: "destructive",
           duration: 3000
         });
@@ -290,21 +290,25 @@ export default function Profile() {
         return;
       }
       
-      // Carica l'immagine usando il nuovo sistema
-      const downloadURL = await uploadProfileImage(file);
+      // Mostriamo un messaggio di caricamento in corso
+      toast({
+        title: "Caricamento in corso",
+        description: "Stiamo caricando la tua immagine...",
+        duration: 3000
+      });
       
-      if (downloadURL) {
-        toast({
-          title: "Immagine aggiornata",
-          description: "La tua immagine del profilo è stata caricata con successo!",
-          duration: 3000
-        });
-        
-        // Forziamo un refresh della pagina per vedere subito la nuova immagine
-        window.location.reload();
-      } else {
-        throw new Error("Impossibile caricare l'immagine del profilo");
-      }
+      // Utilizziamo la nuova funzione semplificata per caricare l'immagine
+      const downloadURL = await uploadProfilePicture(file);
+      
+      toast({
+        title: "Immagine aggiornata",
+        description: "La tua immagine del profilo è stata caricata con successo!",
+        duration: 3000
+      });
+      
+      // Forziamo un refresh della pagina per vedere subito la nuova immagine
+      window.location.reload();
+      
     } catch (error) {
       console.error("Errore durante il caricamento dell'immagine:", error);
       toast({

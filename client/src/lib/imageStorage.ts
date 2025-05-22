@@ -32,9 +32,17 @@ export async function uploadProfileImage(file: File): Promise<string | null> {
     // 2. Carica su Firebase Storage
     const storageRef = ref(storage, storagePath);
     
-    // Mostra il progresso e gestisce il caricamento
+    // Mostra il progresso e gestisce il caricamento con timeout di sicurezza
     console.log(`Inizio upload...`);
-    const uploadResult = await uploadBytes(storageRef, file);
+    
+    // Aggiungiamo un timeout di 30 secondi per evitare caricamenti infiniti
+    const uploadPromise = uploadBytes(storageRef, file);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout durante il caricamento dell'immagine")), 30000);
+    });
+    
+    // Usiamo Promise.race per terminare se il caricamento è troppo lungo
+    const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as any;
     console.log(`Upload completato: ${uploadResult.metadata.fullPath}`);
     
     // 3. Ottieni URL pubblico
