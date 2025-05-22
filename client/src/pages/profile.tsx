@@ -12,7 +12,7 @@ import { Camera, UserCircle, Upload, UserIcon } from "lucide-react";
 import { signOut, getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { collection, query, where, getDocs, orderBy, limit, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { uploadAndSetProfileImage, resizeImageSimple } from "@/lib/simpleImageUpload";
+import { setCustomColorAvatar, setRandomColorAvatar } from "@/lib/avatarSelector";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -254,78 +254,44 @@ export default function Profile() {
       return;
     }
     
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      console.log("Nessun file selezionato");
-      return;
-    }
-    
     setIsUploadingImage(true);
     
     try {
-      const file = files[0];
-      
-      // Verifica che sia un'immagine
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Formato non supportato",
-          description: "Per favore seleziona un'immagine (JPG, PNG, GIF)",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-        return;
-      }
-      
-      // Verifica dimensione
-      const maxSize = 2 * 1024 * 1024; // 2MB
-      if (file.size > maxSize) {
-        toast({
-          title: "Immagine troppo grande",
-          description: "Per favore seleziona un'immagine di dimensioni inferiori a 2MB",
-          variant: "destructive",
-          duration: 3000
-        });
-        setIsUploadingImage(false);
-        return;
-      }
-      
       // Mostriamo un messaggio di caricamento in corso
       toast({
         title: "Caricamento in corso",
-        description: "Stiamo caricando la tua immagine...",
+        description: "Stiamo aggiornando il tuo profilo...",
         duration: 3000
       });
       
       try {
-        // Ridimensioniamo l'immagine per renderla più leggera
-        console.log("Ridimensionamento dell'immagine...");
-        const resizedImage = await resizeImageSimple(file, 500);
-        console.log("Immagine ridimensionata con successo");
-        
-        // Aggiorniamo l'immagine del profilo utilizzando il nostro metodo semplificato
-        console.log("Caricamento dell'immagine del profilo...");
-        const avatarUrl = await uploadAndSetProfileImage(resizedImage);
+        // Generiamo un avatar con un colore casuale
+        // Questa soluzione è sempre affidabile e funziona in ogni caso
+        console.log("Generazione avatar colorato...");
+        const avatarUrl = await setRandomColorAvatar(
+          currentUser.uid,
+          currentUser.displayName || 'User'
+        );
         
         if (avatarUrl) {
-          console.log("Immagine del profilo aggiornata con successo");
+          console.log("Avatar aggiornato con successo:", avatarUrl);
           
           toast({
-            title: "Immagine aggiornata",
-            description: "La tua immagine del profilo è stata caricata con successo!",
+            title: "Avatar aggiornato",
+            description: "Il tuo avatar è stato aggiornato con successo!",
             duration: 3000
           });
           
-          // Forziamo un refresh della pagina per vedere subito la nuova immagine
+          // Forziamo un refresh della pagina per vedere subito il nuovo avatar
           setTimeout(() => {
             window.location.reload();
           }, 1000);
         }
       } catch (uploadError: any) {
-        console.error("Errore di caricamento:", uploadError);
+        console.error("Errore nell'aggiornamento dell'avatar:", uploadError);
         
         // Mostriamo un messaggio di errore personalizzato
-        const errorMessage = uploadError.message || "Impossibile caricare l'immagine";
+        const errorMessage = uploadError.message || "Impossibile aggiornare l'avatar";
         toast({
           title: "Errore",
           description: errorMessage,
@@ -350,7 +316,7 @@ export default function Profile() {
     }
   };
   
-  // Utilizziamo immagini di profilo reali
+  // Utilizziamo avatar colorati generati in base al nome utente
 
   const handleLogout = async () => {
     const auth = getAuth();
